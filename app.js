@@ -2,6 +2,11 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
+const adminStorageKey = "baic_admin_demo_config_v3";
+const adminSourceData = window.BAIC_ADMIN_DATA || {};
+let adminConfigSnapshot = loadAdminConfigSnapshot();
+let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
+let configuredTaskRules = adminConfigSnapshot.taskRules || [];
 let currentIndex = 0;
 let selectedResult = null;
 let toastTimer;
@@ -94,14 +99,63 @@ const el = (tag, className, text) => {
   return node;
 };
 
-const stateMeta = {
-  pending: { main: "待跟进", sub: "—" },
-  following: { main: "跟进中", sub: "已联系" },
-  testdrive: { main: "暂存", sub: "试驾" },
-  cash: { main: "暂存", sub: "确认全款" },
-  noIntent: { main: "暂存", sub: "无意向购买" },
-  lost: { main: "战败", sub: "—" }
+function loadAdminConfigSnapshot() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(adminStorageKey));
+    return {
+      transitionConfig: saved?.transitionConfig || adminSourceData.transitionConfig,
+      taskRules: saved?.taskRules || adminSourceData.taskRules || []
+    };
+  } catch (error) {
+    return { transitionConfig: adminSourceData.transitionConfig, taskRules: adminSourceData.taskRules || [] };
+  }
+}
+
+const legacyStateCodes = {
+  pending: "pending",
+  following: "contacted",
+  testdrive: "interested",
+  cash: "contacted",
+  noIntent: "prospect_lost",
+  lost: "prospect_lost"
 };
+
+const systemOnlyResults = new Set(["assigned", "timeout"]);
+const taskRuleIds = { FIRST_CONTACT: "RULE-FIRST", CALLBACK: "RULE-RETRY" };
+const fallbackTaskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
+
+function leadStateCode(lead) {
+  return lead.stateCode || legacyStateCodes[lead.state] || "pending";
+}
+
+function configuredState(code) {
+  return transitionConfig.states.find((item) => item.code === code);
+}
+
+function configuredResult(code) {
+  return transitionConfig.results.find((item) => item.code === code);
+}
+
+function configuredTag(code) {
+  return (transitionConfig.leadTags || []).find((item) => item.code === code);
+}
+
+function configuredTaskRule(code) {
+  const id = taskRuleIds[code];
+  return configuredTaskRules.find((item) => item.id === id);
+}
+
+function taskInfoForFlow(flow) {
+  if (!flow?.task) return null;
+  const rule = configuredTaskRule(flow.task);
+  if (rule && rule.enabled === false) return null;
+  return {
+    code: flow.task,
+    name: rule?.type || fallbackTaskLabels[flow.task] || flow.task,
+    trigger: rule?.trigger || configuredResult(flow.result)?.name || flow.result,
+    deadline: flow.deadline || rule?.deadline || "—"
+  };
+}
 
 const orderStatusCodes = ["UNMARKED", "CREDIT_REVIEW", "CONTRACT_SIGNED", "WAITING_DISBURSEMENT", "DISBURSEMENT_SUCCESS", "VEHICLE_DELIVERED"];
 const orderStatusDataLabels = {
@@ -113,53 +167,28 @@ const orderStatusDataLabels = {
   VEHICLE_DELIVERED: "已提车"
 };
 
-const standardResults = {
-  interested: { label: "已沟通－有意向", action: "进入或保持已联系状态", deadline: "承诺时间优先；默认 +2小时" },
-  unreachable: { label: "未接通", action: "累计未接通次数", deadline: "按当前累计次数计算" },
-  callback: { label: "要求稍后联系", action: "按用户约定时间回访", deadline: "销售必须填写时间" },
-  noIntent: { label: "已沟通－无意向", action: "转入低频唤醒", deadline: "默认 +30天" },
-  testdrive: { label: "暂定试驾", action: "转入暂存·试驾", deadline: "默认 +30天" },
-  cash: { label: "确认全款", action: "转入暂存·确认全款", deadline: "默认 +30天" },
-  invalid: { label: "号码错误", action: "转为战败终态", deadline: "不再生成任务" },
-  abandon: { label: "放弃购买", action: "转为战败终态", deadline: "不再生成任务" },
-  keepDormant: { label: "继续暂存", action: "保持当前暂存状态", deadline: "默认 +30天" }
-};
-
-function localizedResultConfig(code) {
-  return {
-    label: t("result." + code + ".label"),
-    action: t("result." + code + ".action"),
-    deadline: t("result." + code + ".deadline")
-  };
+function flowsForLead(lead) {
+  return transitionConfig.flows.filter((flow) => flow.current === leadStateCode(lead) && !systemOnlyResults.has(flow.result));
 }
 
-function resultCodesFor(lead) {
-  if (lead.state === "pending") return ["unreachable", "interested", "noIntent", "callback", "invalid"];
-  if (lead.state === "following") return ["interested", "unreachable", "callback", "testdrive", "cash", "noIntent", "abandon"];
-  if (["testdrive", "cash", "noIntent"].includes(lead.state)) return ["interested", "unreachable", "keepDormant", "abandon"];
-  return [];
+function stateLabel(code) {
+  const state = configuredState(code) || configuredState("pending");
+  if (!state) return code || "—";
+  return state.businessStage + " · " + state.name;
 }
 
-function stateLabel(key) {
-  const state = stateMeta[key] ? key : "pending";
-  return t("state." + state + ".main") + " · " + t("state." + state + ".sub");
+function resultLabelFor(code) {
+  return configuredResult(code)?.name || code;
 }
 
-function dataStateLabel(key) {
-  const item = stateMeta[key] || stateMeta.pending;
-  return item.main + " · " + item.sub;
+function tagNames(codes = []) {
+  return codes.map((code) => configuredTag(code)?.name || code);
 }
 
-function resultLabelFor(lead, code) {
-  if (code !== "unreachable") return localizedResultConfig(code).label;
-  const attempt = lead.unreachableCount + 1;
-  return t("result.unreachable.attempt", { count: attempt, limit: attempt >= 3 ? t("result.unreachable.limit") : "" });
-}
-
-function dataResultLabelFor(lead, code) {
-  if (code !== "unreachable") return standardResults[code].label;
-  const attempt = lead.unreachableCount + 1;
-  return "未接通（第" + attempt + "次" + (attempt >= 3 ? "，达上限" : "") + "）";
+function resultActionFor(flow) {
+  const labels = tagNames(flow.setTags || []);
+  const action = "流转至 " + stateLabel(flow.next);
+  return labels.length ? action + "；标记为" + labels.join("、") : action;
 }
 
 function demoNow() {
@@ -195,21 +224,41 @@ function readableTime(value) {
   return value.replace("T", " ");
 }
 
-function getTransition(lead, code) {
-  const nextCount = code === "unreachable" ? lead.unreachableCount + 1 : lead.unreachableCount;
-  if (code === "invalid") return { state: "lost", reason: "号码错误", terminal: true, nextCount };
-  if (code === "abandon") return { state: "lost", reason: "", terminal: true, nextCount };
-  if (code === "unreachable" && nextCount >= 3) return { state: "lost", reason: "未接通（累计3次）", terminal: true, systemLost: true, nextCount };
-  if (code === "unreachable") {
-    return { state: lead.state === "pending" ? "following" : lead.state, task: "普通回访", trigger: nextCount === 1 ? "首次联系未接通" : "累计第2次未接通", time: nextCount === 1 ? addHours(2) : tomorrowAtTen(), nextCount };
+function deadlineInputValue(deadline) {
+  if (!deadline || deadline === "—") return "";
+  if (deadline === "立即处理") return toInputValue(demoNow());
+  const minuteMatch = deadline.match(/^\+(\d+)分钟$/);
+  if (minuteMatch) {
+    const date = demoNow();
+    date.setMinutes(date.getMinutes() + Number(minuteMatch[1]));
+    return toInputValue(date);
   }
-  if (code === "interested") return { state: "following", task: "普通回访", trigger: lead.state === "following" ? "客户已沟通有意向" : "客户恢复意向", time: addHours(2), nextCount };
-  if (code === "callback") return { state: lead.state === "pending" ? "following" : lead.state, task: "普通回访", trigger: "客户要求稍后联系", time: "", manualTime: true, nextCount };
-  if (code === "noIntent") return { state: "noIntent", task: "普通回访", trigger: "线索进入暂存", time: addDays(30), reason: "", nextCount };
-  if (code === "testdrive") return { state: "testdrive", task: "普通回访", trigger: "线索进入暂存", time: addDays(30), nextCount };
-  if (code === "cash") return { state: "cash", task: "普通回访", trigger: "线索进入暂存", time: addDays(30), nextCount };
-  if (code === "keepDormant") return { state: lead.state, task: "普通回访", trigger: "暂存线索到期", time: addDays(30), nextCount };
-  return { state: lead.state, nextCount };
+  const hourMatch = deadline.match(/^\+(\d+)小时$/);
+  if (hourMatch) return addHours(Number(hourMatch[1]));
+  const dayMatch = deadline.match(/^\+(\d+)天$/);
+  if (dayMatch) return addDays(Number(dayMatch[1]));
+  return "";
+}
+
+function getTransition(lead, code) {
+  const flow = transitionConfig.flows.find((item) => item.current === leadStateCode(lead) && item.result === code);
+  if (!flow) return null;
+  const nextState = configuredState(flow.next);
+  const taskInfo = taskInfoForFlow(flow);
+  return {
+    flow,
+    stateCode: flow.next,
+    terminal: Boolean(nextState?.terminal),
+    noNextTask: !taskInfo,
+    reasonRequired: Boolean(flow.reason || configuredResult(code)?.requiresReason),
+    task: taskInfo?.name,
+    taskCode: taskInfo?.code,
+    trigger: taskInfo?.trigger,
+    deadline: taskInfo?.deadline || flow.deadline || "—",
+    time: taskInfo ? deadlineInputValue(taskInfo.deadline) : "",
+    tags: flow.setTags || lead.leadTags || [],
+    nextCount: flow.unreachable ? lead.unreachableCount + 1 : lead.unreachableCount
+  };
 }
 
 function activeLead() {
@@ -229,7 +278,7 @@ function renderScenarioOptions() {
   select.innerHTML = "";
   leads.forEach((lead, index) => {
     if (!lead.task) return;
-    const option = el("option", "", lead.task.group + "｜" + stateLabel(lead.state) + "｜" + lead.name);
+    const option = el("option", "", lead.task.group + "｜" + stateLabel(leadStateCode(lead)) + "｜" + lead.name);
     option.value = String(index);
     option.selected = index === currentIndex;
     select.appendChild(option);
@@ -261,7 +310,10 @@ function renderLead() {
   fillText("price", lead.price);
   fillText("rate", lead.rate);
   fillText("term", lead.term);
-  fillText("currentState", stateLabel(lead.state));
+  fillText("currentState", stateLabel(leadStateCode(lead)));
+  const currentTags = tagNames(lead.leadTags || []);
+  fillText("leadQualityDisplay", currentTags.length ? currentTags.join("、") : "暂无线索标签");
+  $("leadQualityDisplay").className = "lead-quality-display " + ((lead.leadTags || [])[0] || "");
   fillText("attemptCount", t("follow.attempts", { count: lead.unreachableCount }));
   renderOrderStatusSummary(lead);
   $("changedBadge").hidden = !lead.changed && !(lead.editRecords && lead.editRecords.length);
@@ -354,24 +406,27 @@ function renderResults() {
   const lead = activeLead();
   const list = $("resultList");
   list.innerHTML = "";
-  resultCodesFor(lead).forEach((code) => {
-    const config = localizedResultConfig(code);
-    if (code === "unreachable") {
-      const attempt = lead.unreachableCount + 1;
-      config.label = resultLabelFor(lead, code);
-      config.deadline = t("result.unreachable.deadline" + Math.min(attempt, 3));
-    }
+  const flows = flowsForLead(lead);
+  flows.forEach((flow) => {
+    const code = flow.result;
+    const taskInfo = taskInfoForFlow(flow);
     const label = el("label", "result-option");
     const radio = el("input");
     radio.type = "radio";
     radio.name = "followResult";
     radio.value = code;
     const copy = el("span", "result-copy");
-    copy.append(el("strong", "", config.label), el("small", "", config.action));
-    label.append(radio, copy, el("span", "result-deadline", config.deadline));
+    copy.append(el("strong", "", resultLabelFor(code)), el("small", "", resultActionFor(flow)));
+    label.append(radio, copy, el("span", "result-deadline", taskInfo ? taskInfo.name + " · " + taskInfo.deadline : "不生成后续任务"));
     radio.addEventListener("change", () => selectResult(code, label));
     list.appendChild(label);
   });
+  if (!flows.length) {
+    const empty = el("div", "result-empty", "当前节点没有配置销售可提交的跟进结果");
+    list.appendChild(empty);
+    $("submitButton").disabled = true;
+    $("submitTopButton").disabled = true;
+  }
 }
 
 function resetDynamicFields() {
@@ -383,27 +438,29 @@ function resetDynamicFields() {
   $("callbackNote").value = "";
   $("nextTime").value = "";
   $("nextTimeDefault").value = "";
-  fillText("previewState", stateLabel(activeLead().state));
+  fillText("previewState", stateLabel(leadStateCode(activeLead())));
+  fillText("previewTags", "保持当前标签");
   fillText("previewTask", t("follow.waiting"));
-  $("submitButton").disabled = false;
-  $("submitTopButton").disabled = false;
+  const hasResults = flowsForLead(activeLead()).length > 0;
+  $("submitButton").disabled = !hasResults;
+  $("submitTopButton").disabled = !hasResults;
 }
 
 function selectResult(code, selectedLabel) {
   selectedResult = code;
   document.querySelectorAll(".result-option").forEach((item) => item.classList.toggle("selected", item === selectedLabel));
   const transition = getTransition(activeLead(), code);
-  $("reasonRow").hidden = !["noIntent", "invalid", "abandon"].includes(code) && !transition.systemLost;
-  $("reasonInput").readOnly = Boolean(transition.systemLost);
-  if (code === "invalid") $("reasonInput").value = "号码错误";
-  else if (transition.systemLost) $("reasonInput").value = transition.reason;
-  else $("reasonInput").value = "";
-  $("callbackRow").hidden = code !== "callback";
-  $("nextTimeRow").hidden = code === "callback" || transition.terminal;
-  if (code === "callback") $("nextTime").value = addHours(2);
-  else $("nextTimeDefault").value = transition.time || "";
-  fillText("previewState", stateLabel(transition.state));
-  fillText("previewTask", transition.terminal ? t("follow.noTask") : transition.task + " · " + transition.trigger);
+  if (!transition) return;
+  $("reasonRow").hidden = !transition.reasonRequired;
+  $("reasonInput").readOnly = false;
+  $("reasonInput").value = "";
+  $("callbackRow").hidden = true;
+  $("nextTimeRow").hidden = transition.noNextTask;
+  $("nextTimeDefault").value = transition.time || "";
+  fillText("previewState", stateLabel(transition.stateCode));
+  const labels = tagNames(transition.tags);
+  fillText("previewTags", labels.length ? labels.join("、") : "保持当前标签");
+  fillText("previewTask", transition.noNextTask ? t("follow.noTask") : transition.task + " · " + transition.deadline);
 }
 
 function renderRecords() {
@@ -428,12 +485,9 @@ function renderRecords() {
 
 function validateSubmission(transition) {
   if (!selectedResult) return t("validation.result");
+  if (!transition) return "当前结果没有匹配到后台流转规则，请管理员检查配置";
   if (!$("reasonRow").hidden && !$("reasonInput").value.trim()) return t("validation.reason");
-  if (selectedResult === "callback") {
-    if (!$("callbackNote").value.trim()) return t("validation.callbackNote");
-    if (!$("nextTime").value) return t("validation.callbackTime");
-  }
-  if (!transition.terminal && selectedResult !== "callback" && !$("nextTimeDefault").value) return t("validation.nextTime");
+  if (!transition.noNextTask && !$("nextTimeDefault").value) return t("validation.nextTime");
   return "";
 }
 
@@ -449,27 +503,26 @@ function submitFollowUp() {
     showToast(error);
     return;
   }
-  const resultLabel = dataResultLabelFor(lead, selectedResult);
+  const resultLabel = resultLabelFor(selectedResult);
   const reason = $("reasonInput").value.trim();
-  const nextTime = selectedResult === "callback" ? $("nextTime").value : $("nextTimeDefault").value;
-  const oldState = dataStateLabel(lead.state);
-  const newState = dataStateLabel(transition.state);
+  const nextTime = $("nextTimeDefault").value;
+  const oldState = stateLabel(leadStateCode(lead));
+  const newState = stateLabel(transition.stateCode);
   const newOperations = [
     ["刚刚", "跟进提交", "跟进结果：" + resultLabel + (reason ? "；原因：" + reason : "")],
     ["刚刚", "任务完成", lead.task.group + "任务 " + lead.task.id + " 已由处理中更新为已完成"]
   ];
   if (oldState !== newState) newOperations.push(["刚刚", "状态流转", oldState + " → " + newState]);
-  if (!transition.terminal) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
-  else newOperations.push(["刚刚", "任务结束", "线索进入战败终态，不再生成后续任务"]);
+  const newTags = tagNames(transition.tags);
+  if (newTags.length) newOperations.push(["刚刚", "线索标签更新", "线索标记为：" + newTags.join("、")]);
+  if (!transition.noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
+  else newOperations.push(["刚刚", "任务结束", "后台流转规则未配置后续任务"]);
   lead.operations = newOperations.concat(lead.operations);
-  lead.state = transition.state;
+  lead.stateCode = transition.stateCode;
+  lead.leadTags = transition.tags;
   lead.unreachableCount = transition.nextCount;
-  if (selectedResult === "callback") {
-    lead.lastContact = $("callbackNote").value.trim();
-    lead.notes.unshift(["刚刚", lead.lastContact]);
-  }
-  if (transition.terminal) {
-    lead.lostReason = reason || transition.reason;
+  if (transition.noNextTask) {
+    lead.lostReason = reason || lead.lostReason;
     lead.task = null;
   } else {
     lead.task = { id: nextTaskId(), group: transition.task, trigger: transition.trigger, due: readableTime(nextTime) };
@@ -719,6 +772,15 @@ $("languageSelect").addEventListener("change", (event) => {
   try { localStorage.setItem("crmLocale", currentLocale); } catch (error) { /* Storage may be unavailable in private mode. */ }
   applyStaticTranslations();
   renderLead();
+});
+
+window.addEventListener("storage", (event) => {
+  if (event.key !== adminStorageKey) return;
+  adminConfigSnapshot = loadAdminConfigSnapshot();
+  transitionConfig = adminConfigSnapshot.transitionConfig || transitionConfig;
+  configuredTaskRules = adminConfigSnapshot.taskRules || configuredTaskRules;
+  renderLead();
+  showToast("管理员后台配置已同步到本次跟进操作区");
 });
 
 applyStaticTranslations();
