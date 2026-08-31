@@ -34,23 +34,23 @@ window.BAIC_ADMIN_DATA = {
       { code: "pending", name: "待跟进", group: "initial", businessStage: "待跟进", parent: "issued", level: 2, terminal: false, dormant: false, color: "#4d8df7" },
       { code: "not_followed", name: "未跟进", group: "initial", businessStage: "待跟进", parent: "issued", level: 2, terminal: false, dormant: false, color: "#4d8df7" },
       { code: "contacted", name: "已跟进", group: "processing", businessStage: "跟进中", parent: "pending", level: 3, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "valid_lead", name: "有效线索", group: "valid", businessStage: "跟进中", parent: "contacted", level: 4, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "invalid_lead", name: "无效线索", group: "invalid", businessStage: "跟进中", parent: "contacted", level: 4, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "interested", name: "有意向", group: "valid", businessStage: "跟进中", parent: "valid_lead", level: 5, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "prospect_lost", name: "战败", group: "lost", businessStage: "流失", parent: "valid_lead", level: 5, terminal: false, dormant: false, color: "#ff6b6b" },
-      { code: "no_intent", name: "无意向", group: "lost", businessStage: "流失", parent: "invalid_lead", level: 5, terminal: true, dormant: false, color: "#ff6b6b" },
-      { code: "unreach_limit", name: "3次未接通", group: "lost", businessStage: "流失", parent: "invalid_lead", level: 5, terminal: true, dormant: false, color: "#ff6b6b" },
-      { code: "wrong_number", name: "号码错误", group: "lost", businessStage: "流失", parent: "invalid_lead", level: 5, terminal: true, dormant: false, color: "#ff6b6b" },
-      { code: "prospect", name: "潜客", group: "valid", businessStage: "跟进中", parent: "interested", level: 6, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "clear_reject", name: "明确拒绝", group: "lost", businessStage: "流失", parent: "prospect_lost", level: 6, terminal: true, dormant: false, color: "#ff6b6b" },
-      { code: "bought_other", name: "已购买其他品牌", group: "lost", businessStage: "流失", parent: "prospect_lost", level: 6, terminal: true, dormant: false, color: "#ff6b6b" }
+      { code: "interested", name: "有意向", group: "valid", businessStage: "跟进中", parent: "contacted", level: 4, terminal: false, dormant: false, color: "#2fcf9f" },
+      { code: "prospect_lost", name: "战败", group: "lost", businessStage: "流失", parent: "contacted", level: 4, terminal: false, dormant: false, color: "#ff6b6b" },
+      { code: "no_intent", name: "无意向", group: "lost", businessStage: "流失", parent: "contacted", level: 4, terminal: true, dormant: false, color: "#ff6b6b" },
+      { code: "unreach_limit", name: "3次未接通", group: "lost", businessStage: "流失", parent: "contacted", level: 4, terminal: true, dormant: false, color: "#ff6b6b" },
+      { code: "wrong_number", name: "号码错误", group: "lost", businessStage: "流失", parent: "contacted", level: 4, terminal: true, dormant: false, color: "#ff6b6b" },
+      { code: "prospect", name: "潜客", group: "valid", businessStage: "跟进中", parent: "interested", level: 5, terminal: false, dormant: false, color: "#2fcf9f" },
+      { code: "clear_reject", name: "明确拒绝", group: "lost", businessStage: "流失", parent: "prospect_lost", level: 5, terminal: true, dormant: false, color: "#ff6b6b" },
+      { code: "bought_other", name: "已购买其他品牌", group: "lost", businessStage: "流失", parent: "prospect_lost", level: 5, terminal: true, dormant: false, color: "#ff6b6b" }
+    ],
+    leadTags: [
+      { code: "valid_lead", name: "有效线索", type: "lead_quality", color: "#2fcf9f" },
+      { code: "invalid_lead", name: "无效线索", type: "lead_quality", color: "#ff9f43" }
     ],
     results: [
       { code: "assigned", name: "下发分配", category: "contact", requiresCallbackTime: false, requiresReason: false },
       { code: "timeout", name: "超时未跟进", category: "unreachable", requiresCallbackTime: false, requiresReason: false },
       { code: "first_contact", name: "首次联系", category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "mark_valid", name: "判定有效", category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "mark_invalid", name: "判定无效", category: "lost", requiresCallbackTime: false, requiresReason: true },
       { code: "interested", name: "有意向", category: "contact", requiresCallbackTime: false, requiresReason: false },
       { code: "lost", name: "战败", category: "lost", requiresCallbackTime: false, requiresReason: true },
       { code: "convert_prospect", name: "转潜客", category: "contact", requiresCallbackTime: false, requiresReason: false },
@@ -65,16 +65,14 @@ window.BAIC_ADMIN_DATA = {
       { id: 2, current: "issued", result: "timeout", next: "not_followed", unreachable: false, reason: false, task: "FIRST_CONTACT", deadline: "立即处理" },
       { id: 3, current: "pending", result: "timeout", next: "not_followed", unreachable: false, reason: false, task: "FIRST_CONTACT", deadline: "立即处理" },
       { id: 4, current: "pending", result: "first_contact", next: "contacted", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
-      { id: 5, current: "contacted", result: "mark_valid", next: "valid_lead", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
-      { id: 6, current: "contacted", result: "mark_invalid", next: "invalid_lead", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 7, current: "valid_lead", result: "interested", next: "interested", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
-      { id: 8, current: "valid_lead", result: "lost", next: "prospect_lost", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 9, current: "interested", result: "convert_prospect", next: "prospect", unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 10, current: "invalid_lead", result: "no_intent", next: "no_intent", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 11, current: "invalid_lead", result: "unreachable", next: "unreach_limit", unreachable: true, reason: false, task: null, deadline: "—" },
-      { id: 12, current: "invalid_lead", result: "invalid_number", next: "wrong_number", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 13, current: "prospect_lost", result: "clear_reject", next: "clear_reject", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 14, current: "prospect_lost", result: "bought_other", next: "bought_other", unreachable: false, reason: true, task: null, deadline: "—" }
+      { id: 5, current: "contacted", result: "interested", next: "interested", setTags: ["valid_lead"], unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
+      { id: 6, current: "contacted", result: "lost", next: "prospect_lost", setTags: ["valid_lead"], unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 7, current: "contacted", result: "no_intent", next: "no_intent", setTags: ["invalid_lead"], unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 8, current: "contacted", result: "unreachable", next: "unreach_limit", setTags: ["invalid_lead"], unreachable: true, reason: false, task: null, deadline: "—" },
+      { id: 9, current: "contacted", result: "invalid_number", next: "wrong_number", setTags: ["invalid_lead"], unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 10, current: "interested", result: "convert_prospect", next: "prospect", setTags: ["valid_lead"], unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
+      { id: 11, current: "prospect_lost", result: "clear_reject", next: "clear_reject", setTags: ["valid_lead"], unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 12, current: "prospect_lost", result: "bought_other", next: "bought_other", setTags: ["valid_lead"], unreachable: false, reason: true, task: null, deadline: "—" }
     ]
   }
 };

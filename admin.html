@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="北汽 CRM 管理员后台演示">
   <title>北汽管理员后台</title>
-  <link rel="stylesheet" href="admin.css?v=20260831-3">
+  <link rel="stylesheet" href="admin.css?v=20260831-5">
 </head>
 <body>
   <div class="admin-app">
@@ -73,6 +73,7 @@
 
             <div class="config-pane active" id="configStatesPane">
               <div class="config-toolbar"><div><h2>节点字典</h2><p>定义北汽线索状态层级及终态属性。</p></div><button class="primary-button" id="showStateForm" type="button">+ 添加节点</button></div>
+              <div class="lead-tag-panel"><div><strong>线索标签</strong><small>用于标记线索质量，不参与状态流转</small></div><div class="lead-tag-list" id="leadTagList"></div></div>
               <div class="state-tree" id="stateTree"></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>状态编码</th><th>显示名称</th><th>业务阶段</th><th>父状态</th><th>层级</th><th>属性</th><th>操作</th></tr></thead><tbody id="stateRows"></tbody></table></div>
             </div>
@@ -107,7 +108,7 @@
     </div>
   </div>
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260831-3"></script>
-  <script src="admin.js?v=20260831-3"></script>
+  <script src="admin-data.js?v=20260831-5"></script>
+  <script src="admin.js?v=20260831-5"></script>
 </body>
 </html>
