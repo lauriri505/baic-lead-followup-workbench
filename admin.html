@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="北汽 CRM 管理员后台演示">
+  <title>北汽管理员后台</title>
+  <link rel="stylesheet" href="admin.css?v=20260831-1">
+</head>
+<body>
+  <div class="admin-app">
+    <aside class="admin-sidebar">
+      <a class="admin-brand" href="admin.html"><span class="brand-mark">AC</span><span><strong>AUTOCAVA CRM</strong><small>BAIC ADMIN</small></span></a>
+      <div class="tenant-card"><span>当前租户</span><strong>北汽 · BAIC</strong><small>品牌数据严格隔离</small></div>
+      <nav class="admin-nav" aria-label="管理员功能">
+        <button class="nav-item active" data-view="dashboard" type="button"><span>01</span>后台总览</button>
+        <button class="nav-item" data-view="leads" type="button"><span>02</span>线索数据</button>
+        <button class="nav-item" data-view="accounts" type="button"><span>03</span>账号与角色</button>
+        <button class="nav-item" data-view="tasks" type="button"><span>04</span>任务配置</button>
+        <button class="nav-item" data-view="nodes" type="button"><span>05</span>跟进节点</button>
+      </nav>
+      <a class="workbench-link" href="index.html">返回销售工作台 →</a>
+    </aside>
+
+    <div class="admin-main">
+      <header class="admin-topbar">
+        <button class="menu-button" id="menuButton" type="button" aria-label="打开菜单">☰</button>
+        <div><p>北汽租户管理空间</p><strong id="viewTitle">后台总览</strong></div>
+        <div class="admin-account"><span><small>当前账号</small><strong>baic_admin_001 · 北汽管理员</strong></span><span class="admin-avatar">管</span></div>
+      </header>
+
+      <main class="admin-content">
+        <section class="admin-view active" id="dashboardView">
+          <div class="view-heading"><div><p class="eyebrow">BAIC TENANT OVERVIEW</p><h1>北汽线索运营总览</h1><p>仅统计北汽品牌范围内的线索、任务与账号。</p></div><span class="scope-chip">数据范围：BAIC</span></div>
+          <div class="metric-grid" id="metricGrid"></div>
+          <div class="dashboard-grid">
+            <section class="admin-panel"><div class="panel-title"><div><h2>线索阶段分布</h2><p>当前北汽线索池</p></div><button class="text-action" data-go="leads" type="button">查看全部</button></div><div class="stage-bars" id="stageBars"></div></section>
+            <section class="admin-panel"><div class="panel-title"><div><h2>今日任务概况</h2><p>按任务状态统计</p></div><button class="text-action" data-go="tasks" type="button">配置规则</button></div><div class="task-summary" id="taskSummary"></div></section>
+          </div>
+          <section class="admin-panel recent-panel"><div class="panel-title"><div><h2>最新北汽线索</h2><p>按创建时间倒序</p></div></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>线索状态</th><th>负责人</th><th>当前任务</th><th>创建时间</th></tr></thead><tbody id="recentLeadRows"></tbody></table></div></section>
+        </section>
+
+        <section class="admin-view" id="leadsView" hidden>
+          <div class="view-heading"><div><p class="eyebrow">LEAD DATA</p><h1>北汽线索数据</h1><p>管理员只能查看当前租户的 BAIC 品牌线索。</p></div><span class="scope-chip">共 <strong id="leadTotal">0</strong> 条</span></div>
+          <section class="admin-panel"><div class="filter-row"><input id="leadSearch" type="search" placeholder="搜索线索ID、姓名或手机号"><select id="leadStatusFilter"><option value="">全部线索状态</option></select><select id="leadAssigneeFilter"><option value="">全部负责人</option></select><button class="secondary-button" id="resetLeadFilters" type="button">重置</button></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>状态</th><th>负责人</th><th>任务状态</th><th>创建时间</th></tr></thead><tbody id="leadRows"></tbody></table></div><div class="empty-state" id="leadEmpty" hidden>没有符合条件的北汽线索</div></section>
+        </section>
+
+        <section class="admin-view" id="accountsView" hidden>
+          <div class="view-heading"><div><p class="eyebrow">ACCOUNT & ROLE</p><h1>账号与角色</h1><p>配置北汽管理员和北汽销售的角色、状态及数据权限。</p></div><button class="primary-button" id="showAccountForm" type="button">+ 新增账号</button></div>
+          <form class="inline-create admin-panel" id="accountForm" hidden><div><label for="accountId">销售ID / 账号ID</label><input id="accountId" required placeholder="例如：baic_sales_004"></div><div><label for="accountName">用户名</label><input id="accountName" required placeholder="例如：北汽销售004"></div><div><label for="accountRole">角色</label><select id="accountRole"><option value="sales">北汽销售</option><option value="tenant_admin">北汽管理员</option></select></div><button class="primary-button" type="submit">创建账号</button><button class="secondary-button cancel-inline" type="button">取消</button></form>
+          <section class="admin-panel"><div class="panel-title panel-pad"><div><h2>账号列表</h2><p>角色调整后立即应用对应数据范围</p></div></div><div class="table-wrap"><table><thead><tr><th>账号ID</th><th>用户名</th><th>角色</th><th>数据范围</th><th>账号状态</th><th>最近登录</th></tr></thead><tbody id="accountRows"></tbody></table></div></section>
+          <section class="admin-panel role-panel"><div class="panel-title"><div><h2>角色权限</h2><p>配置角色能够访问的管理功能</p></div><button class="secondary-button" id="savePermissions" type="button">保存权限</button></div><div class="role-grid" id="roleGrid"></div></section>
+        </section>
+
+        <section class="admin-view" id="tasksView" hidden>
+          <div class="view-heading"><div><p class="eyebrow">TASK RULES</p><h1>任务配置</h1><p>定义业务事件触发哪类销售任务，以及默认完成时限。</p></div><button class="primary-button" id="showTaskForm" type="button">+ 新增任务规则</button></div>
+          <div class="rule-note"><strong>规则优先级</strong><span>销售手动时间 ＞ 北汽任务规则 ＞ 平台默认规则</span></div>
+          <form class="inline-create admin-panel" id="taskForm" hidden><div><label for="taskType">任务类型</label><input id="taskType" required placeholder="例如：普通回访"></div><div><label for="taskTriggerInput">触发事件</label><input id="taskTriggerInput" required placeholder="例如：首次联系未接通"></div><div><label for="taskDeadline">默认截止时间</label><input id="taskDeadline" required placeholder="例如：+2小时"></div><button class="primary-button" type="submit">添加规则</button><button class="secondary-button cancel-inline" type="button">取消</button></form>
+          <div class="task-rule-list" id="taskRuleList"></div>
+          <div class="sticky-save"><span id="taskSaveHint">修改后需保存才会应用到新生成的任务</span><button class="primary-button" id="saveTaskRules" type="button">保存任务配置</button></div>
+        </section>
+
+        <section class="admin-view" id="nodesView" hidden>
+          <div class="view-heading"><div><p class="eyebrow">FOLLOW-UP NODES</p><h1>线索跟进节点</h1><p>配置每个线索阶段可选择的跟进结果，以及后续任务类型。</p></div><button class="primary-button" id="showNodeForm" type="button">+ 新增节点</button></div>
+          <div class="node-explainer"><div><span>1</span><strong>当前节点</strong><small>销售进入工作台时的线索状态</small></div><div><span>2</span><strong>允许的跟进结果</strong><small>控制销售可选操作</small></div><div><span>3</span><strong>后续任务</strong><small>提交后生成下一任务</small></div></div>
+          <form class="inline-create admin-panel" id="nodeForm" hidden><div><label for="nodeMain">大状态</label><input id="nodeMain" required placeholder="例如：暂存"></div><div><label for="nodeSub">子状态</label><input id="nodeSub" required placeholder="例如：待补充资料"></div><div><label for="nodeTask">后续任务</label><input id="nodeTask" required placeholder="例如：普通回访"></div><div class="wide-field"><label for="nodeResults">允许的跟进结果</label><input id="nodeResults" required placeholder="多个结果用中文逗号分隔"></div><button class="primary-button" type="submit">添加节点</button><button class="secondary-button cancel-inline" type="button">取消</button></form>
+          <div class="node-list" id="nodeList"></div>
+          <div class="sticky-save"><span>节点调整只影响后续进入工作台的线索，不追溯已完成记录。</span><button class="primary-button" id="saveNodes" type="button">保存节点配置</button></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
+  <script src="admin-data.js?v=20260831-1"></script>
+  <script src="admin.js?v=20260831-1"></script>
+</body>
+</html>
