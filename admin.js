@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v1";
+const storageKey = "baic_admin_demo_config_v2";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -18,7 +18,7 @@ const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": 
 const roleLabels = { tenant_admin: "北汽管理员", sales: "北汽销售" };
 const permissionOptions = ["查看北汽全部线索", "查看本人负责线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"];
 const viewNames = { dashboard: "后台总览", leads: "线索数据", accounts: "账号与角色", tasks: "任务配置", nodes: "线索流转配置" };
-const groupLabels = { initial: "初始", processing: "跟进中", valid: "有效", invalid: "无效", dormant: "暂存", lost: "终止" };
+const groupLabels = { initial: "待跟进", processing: "跟进中", valid: "有效线索", invalid: "无效线索", dormant: "暂存", lost: "流失" };
 const categoryLabels = { contact: "联系", unreachable: "未接通", callback: "约定回访", dormant: "暂存", lost: "终止" };
 const taskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
 
@@ -88,13 +88,15 @@ function renderTransitionSummary() {
   $("transitionSummary").innerHTML = values.map(([label, value, note]) => `<article><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
 }
 function renderStateTree() {
-  $("stateTree").innerHTML = [1, 2, 3, 4].map((level) => {
+  const levels = [...new Set(state.transitionConfig.states.map((item) => item.level))].sort((a, b) => a - b);
+  $("stateTree").style.gridTemplateColumns = `repeat(${levels.length}, minmax(180px, 1fr))`;
+  $("stateTree").innerHTML = levels.map((level) => {
     const items = state.transitionConfig.states.filter((item) => item.level === level);
-    return `<div class="tree-level"><header><span>层级 ${level}</span><strong>${items.length}</strong></header><div>${items.map((item) => `<button class="tree-node ${item.terminal ? "terminal" : ""}" data-edit-state="${esc(item.code)}" type="button" style="--node-color:${item.color}"><span></span><strong>${esc(item.name)}</strong><small>${esc(item.code)}</small></button>`).join("") || `<p>暂无节点</p>`}</div></div>`;
+    return `<div class="tree-level"><header><span>层级 ${level}</span><strong>${items.length}</strong></header><div>${items.map((item) => `<button class="tree-node ${item.terminal ? "terminal" : ""}" data-edit-state="${esc(item.code)}" type="button" style="--node-color:${item.color}" title="${esc(item.code)}"><span></span><strong>${esc(item.name)}</strong><small>${esc(item.businessStage || groupLabels[item.group])}</small></button>`).join("") || `<p>暂无节点</p>`}</div></div>`;
   }).join("");
 }
 function renderStateRows() {
-  $("stateRows").innerHTML = state.transitionConfig.states.map((item) => `<tr><td><code>${esc(item.code)}</code></td><td><span class="state-name-cell"><i style="background:${item.color}"></i><strong>${esc(item.name)}</strong></span></td><td><span class="group-chip ${item.group}">${groupLabels[item.group] || item.group}</span></td><td>${esc(stateName(item.parent))}</td><td>${item.level}</td><td><span class="attribute-tags">${item.terminal ? "<em>终态</em>" : ""}${item.dormant ? "<em>休眠</em>" : ""}${!item.terminal && !item.dormant ? "<em>普通</em>" : ""}</span></td><td><div class="row-actions"><button data-edit-state="${esc(item.code)}" type="button">编辑</button><button class="danger-text" data-delete-state="${esc(item.code)}" type="button">删除</button></div></td></tr>`).join("");
+  $("stateRows").innerHTML = state.transitionConfig.states.map((item) => `<tr><td><code>${esc(item.code)}</code></td><td><span class="state-name-cell"><i style="background:${item.color}"></i><strong>${esc(item.name)}</strong></span></td><td><span class="group-chip ${item.group}">${esc(item.businessStage || groupLabels[item.group] || item.group)}</span></td><td>${esc(stateName(item.parent))}</td><td>${item.level}</td><td><span class="attribute-tags">${item.terminal ? "<em>终态</em>" : ""}${item.dormant ? "<em>休眠</em>" : ""}${!item.terminal && !item.dormant ? "<em>普通</em>" : ""}</span></td><td><div class="row-actions"><button data-edit-state="${esc(item.code)}" type="button">编辑</button><button class="danger-text" data-delete-state="${esc(item.code)}" type="button">删除</button></div></td></tr>`).join("");
 }
 function renderStrategyFilter() {
   const current = $("strategyStateFilter").value;
@@ -111,9 +113,11 @@ function renderStrategyRows() {
   }).join("") || `<tr><td colspan="7" class="empty-cell">当前筛选条件下没有流转规则</td></tr>`;
 }
 function renderFlowBoard() {
-  $("flowLegend").innerHTML = Object.entries(groupLabels).map(([key, label]) => `<span><i class="legend-dot ${key}"></i>${label}</span>`).join("") + `<strong>${state.transitionConfig.states.length} 个节点 · ${state.transitionConfig.flows.length} 条规则</strong>`;
-  $("flowBoard").innerHTML = [1, 2, 3, 4].map((level) => `<section class="flow-column"><header>层级 ${level}</header>${state.transitionConfig.states.filter((item) => item.level === level).map((item) => { const count = state.transitionConfig.flows.filter((flow) => flow.current === item.code).length; return `<button class="flow-node-card ${item.terminal ? "terminal" : ""}" data-flow-state="${esc(item.code)}" type="button" style="--node-color:${item.color}"><span class="flow-node-top"><i></i><strong>${esc(item.name)}</strong><em>${count}</em></span><small>${esc(item.code)}</small><span class="flow-node-next">${count ? `${count} 条离开规则` : "无后续流转"}</span></button>`; }).join("") || `<p class="empty-column">暂无节点</p>`}</section>`).join("");
-  showFlowDetail($("flowDetail").dataset.state && stateByCode($("flowDetail").dataset.state) ? $("flowDetail").dataset.state : "pending");
+  const levels = [...new Set(state.transitionConfig.states.map((item) => item.level))].sort((a, b) => a - b);
+  $("flowLegend").innerHTML = `<span><i class="legend-dot initial"></i>待跟进</span><span><i class="legend-dot processing"></i>跟进中</span><span><i class="legend-dot lost"></i>流失</span><strong>${state.transitionConfig.states.length} 个节点 · ${state.transitionConfig.flows.length} 条规则</strong>`;
+  $("flowBoard").style.gridTemplateColumns = `repeat(${levels.length}, minmax(190px, 1fr))`;
+  $("flowBoard").innerHTML = levels.map((level) => `<section class="flow-column"><header>层级 ${level}</header>${state.transitionConfig.states.filter((item) => item.level === level).map((item) => { const count = state.transitionConfig.flows.filter((flow) => flow.current === item.code).length; return `<button class="flow-node-card ${item.terminal ? "terminal" : ""}" data-flow-state="${esc(item.code)}" type="button" style="--node-color:${item.color}" title="${esc(item.code)}"><span class="flow-node-top"><i></i><strong>${esc(item.name)}</strong><em>${count}</em></span><small>${esc(item.businessStage || groupLabels[item.group])}</small><span class="flow-node-next">${count ? `${count} 条离开规则` : "无后续流转"}</span></button>`; }).join("") || `<p class="empty-column">暂无节点</p>`}</section>`).join("");
+  showFlowDetail($("flowDetail").dataset.state && stateByCode($("flowDetail").dataset.state) ? $("flowDetail").dataset.state : "issued");
 }
 function showFlowDetail(code) {
   const item = stateByCode(code); if (!item) return;
@@ -122,7 +126,7 @@ function showFlowDetail(code) {
   const incoming = state.transitionConfig.flows.filter((flow) => flow.next === code && flow.current !== code);
   const outgoing = state.transitionConfig.flows.filter((flow) => flow.current === code);
   const line = (flow, incomingDirection) => `<li><span>${esc(incomingDirection ? stateName(flow.current) : resultName(flow.result))}</span><b>${esc(incomingDirection ? resultName(flow.result) : stateName(flow.next))}</b><em>${flow.task ? taskLabels[flow.task] || flow.task : "不生成任务"}</em></li>`;
-  $("flowDetail").innerHTML = `<header><div><span class="detail-color" style="background:${item.color}"></span><strong>${esc(item.name)}</strong><code>${esc(item.code)}</code></div><small>${groupLabels[item.group] || item.group} · 层级 ${item.level}${item.terminal ? " · 终态" : ""}</small></header><div class="flow-detail-grid"><section><h3>进入该节点 <span>${incoming.length}</span></h3><ul>${incoming.map((flow) => line(flow, true)).join("") || "<li class='no-rule'>无进入规则</li>"}</ul></section><section><h3>离开该节点 <span>${outgoing.length}</span></h3><ul>${outgoing.map((flow) => line(flow, false)).join("") || "<li class='no-rule'>无离开规则</li>"}</ul></section></div>`;
+  $("flowDetail").innerHTML = `<header><div><span class="detail-color" style="background:${item.color}"></span><strong>${esc(item.name)}</strong><code>${esc(item.code)}</code></div><small>${esc(item.businessStage || groupLabels[item.group] || item.group)} · 层级 ${item.level}${item.terminal ? " · 终态" : ""}</small></header><div class="flow-detail-grid"><section><h3>进入该节点 <span>${incoming.length}</span></h3><ul>${incoming.map((flow) => line(flow, true)).join("") || "<li class='no-rule'>无进入规则</li>"}</ul></section><section><h3>离开该节点 <span>${outgoing.length}</span></h3><ul>${outgoing.map((flow) => line(flow, false)).join("") || "<li class='no-rule'>无离开规则</li>"}</ul></section></div>`;
 }
 function renderTransitions() {
   renderTransitionSummary(); renderStateTree(); renderStateRows(); renderStrategyFilter(); renderStrategyRows(); renderFlowBoard();
@@ -145,7 +149,7 @@ function openTransitionModal(mode, key = null) {
   if (mode === "state") {
     const item = key ? stateByCode(key) : null;
     const parents = config.states.filter((entry) => entry.code !== key).map((entry) => `<option value="${esc(entry.code)}" ${item?.parent === entry.code ? "selected" : ""}>${esc(entry.name)}（${esc(entry.code)}）</option>`).join("");
-    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>状态编码 *</span><input id="modalStateCode" required value="${esc(item?.code || "")}" ${item ? "readonly" : ""} placeholder="例如：pending"></label><label><span>显示名称 *</span><input id="modalStateName" required value="${esc(item?.name || "")}"></label><label><span>状态分组 *</span><select id="modalStateGroup">${Object.entries(groupLabels).map(([value, label]) => `<option value="${value}" ${item?.group === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label><span>父状态</span><select id="modalStateParent"><option value="">无（根状态）</option>${parents}</select></label><label><span>层级 *</span><input id="modalStateLevel" type="number" min="1" max="5" value="${item?.level || 1}" required></label><label><span>标签颜色</span><input id="modalStateColor" type="color" value="${item?.color || "#345f9f"}"></label></div><div class="modal-checks"><label><input id="modalStateTerminal" type="checkbox" ${item?.terminal ? "checked" : ""}>终态（不再产生后续流转）</label><label><input id="modalStateDormant" type="checkbox" ${item?.dormant ? "checked" : ""}>休眠态（允许到期回捞）</label></div>`;
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>状态编码 *</span><input id="modalStateCode" required value="${esc(item?.code || "")}" ${item ? "readonly" : ""} placeholder="例如：pending"></label><label><span>显示名称 *</span><input id="modalStateName" required value="${esc(item?.name || "")}"></label><label><span>状态分组 *</span><select id="modalStateGroup">${Object.entries(groupLabels).map(([value, label]) => `<option value="${value}" ${item?.group === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label><span>业务阶段</span><select id="modalStateBusinessStage"><option ${item?.businessStage === "待跟进" ? "selected" : ""}>待跟进</option><option ${item?.businessStage === "跟进中" ? "selected" : ""}>跟进中</option><option ${item?.businessStage === "流失" ? "selected" : ""}>流失</option></select></label><label><span>父状态</span><select id="modalStateParent"><option value="">无（根状态）</option>${parents}</select></label><label><span>层级 *</span><input id="modalStateLevel" type="number" min="1" max="8" value="${item?.level || 1}" required></label><label><span>标签颜色</span><input id="modalStateColor" type="color" value="${item?.color || "#345f9f"}"></label></div><div class="modal-checks"><label><input id="modalStateTerminal" type="checkbox" ${item?.terminal ? "checked" : ""}>终态（不再产生后续流转）</label><label><input id="modalStateDormant" type="checkbox" ${item?.dormant ? "checked" : ""}>休眠态（允许到期回捞）</label></div>`;
   } else {
     const flow = key !== null ? config.flows.find((item) => item.id === Number(key)) : null;
     const stateOptions = (selected) => config.states.map((item) => `<option value="${esc(item.code)}" ${selected === item.code ? "selected" : ""}>${esc(item.name)}（${esc(item.code)}）</option>`).join("");
@@ -162,7 +166,7 @@ function saveStateFromModal() {
   const code = $("modalStateCode").value.trim(); const name = $("modalStateName").value.trim();
   if (!code || !name) return toast("请填写状态编码和显示名称");
   if (editingKey === null && stateByCode(code)) return toast("状态编码已存在");
-  const item = { code, name, group: $("modalStateGroup").value, parent: $("modalStateParent").value || null, level: Number($("modalStateLevel").value), terminal: $("modalStateTerminal").checked, dormant: $("modalStateDormant").checked, color: $("modalStateColor").value };
+  const item = { code, name, group: $("modalStateGroup").value, businessStage: $("modalStateBusinessStage").value, parent: $("modalStateParent").value || null, level: Number($("modalStateLevel").value), terminal: $("modalStateTerminal").checked, dormant: $("modalStateDormant").checked, color: $("modalStateColor").value };
   if (editingKey === null) state.transitionConfig.states.push(item); else Object.assign(stateByCode(editingKey), item);
   markDirty(); closeTransitionModal(); renderTransitions(); toast("节点已更新，保存后生效");
 }
