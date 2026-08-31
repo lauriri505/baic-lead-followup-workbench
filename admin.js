@@ -115,15 +115,52 @@ function renderStrategyRows() {
   }).join("") || `<tr><td colspan="7" class="empty-cell">当前筛选条件下没有流转规则</td></tr>`;
 }
 function renderFlowBoard() {
-  const levels = [...new Set(state.transitionConfig.states.map((item) => item.level))].sort((a, b) => a - b);
+  const config = state.transitionConfig;
+  const levels = [...new Set(config.states.map((item) => item.level))].sort((a, b) => a - b);
   $("flowLegend").innerHTML = `<span><i class="legend-dot initial"></i>待跟进</span><span><i class="legend-dot processing"></i>跟进中</span><span><i class="legend-dot lost"></i>流失</span><strong>${state.transitionConfig.states.length} 个节点 · ${state.transitionConfig.flows.length} 条规则</strong>`;
-  $("flowBoard").style.gridTemplateColumns = `repeat(${levels.length}, minmax(190px, 1fr))`;
-  $("flowBoard").innerHTML = levels.map((level) => `<section class="flow-column"><header>层级 ${level}</header>${state.transitionConfig.states.filter((item) => item.level === level).map((item) => { const count = state.transitionConfig.flows.filter((flow) => flow.current === item.code).length; return `<button class="flow-node-card ${item.terminal ? "terminal" : ""}" data-flow-state="${esc(item.code)}" type="button" style="--node-color:${item.color}" title="${esc(item.code)}"><span class="flow-node-top"><i></i><strong>${esc(item.name)}</strong><em>${count}</em></span><small>${esc(item.businessStage || groupLabels[item.group])}</small><span class="flow-node-next">${count ? `${count} 条离开规则` : "无后续流转"}</span></button>`; }).join("") || `<p class="empty-column">暂无节点</p>`}</section>`).join("");
+  const nodeWidth = 172;
+  const nodeHeight = 58;
+  const columnGap = 265;
+  const rowStep = 62;
+  const paddingX = 46;
+  const paddingY = 38;
+  const baicRows = { issued: 4, pending: 2.6, not_followed: 5.4, contacted: 4, interested: 0.6, prospect_lost: 2.8, no_intent: 5, unreach_limit: 7.2, wrong_number: 9.4, prospect: 0.6, clear_reject: 3.3, bought_other: 6.2 };
+  const positions = {};
+  levels.forEach((level) => {
+    const entries = config.states.filter((item) => item.level === level);
+    entries.forEach((item, index) => {
+      const fallbackRow = index - (entries.length - 1) / 2 + 4.8;
+      positions[item.code] = { x: paddingX + (level - 1) * columnGap, y: paddingY + (baicRows[item.code] ?? fallbackRow) * rowStep };
+    });
+  });
+  const canvasWidth = paddingX * 2 + (Math.max(...levels) - 1) * columnGap + nodeWidth;
+  const canvasHeight = Math.max(720, ...Object.values(positions).map((point) => point.y + nodeHeight + paddingY));
+  const edgeSvg = config.flows.map((flow) => {
+    const source = positions[flow.current];
+    const target = positions[flow.next];
+    if (!source || !target) return "";
+    const x1 = source.x + nodeWidth;
+    const y1 = source.y + nodeHeight / 2;
+    const x2 = target.x;
+    const y2 = target.y + nodeHeight / 2;
+    const bend = Math.max(72, (x2 - x1) * 0.46);
+    const path = `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
+    const labelX = (x1 + x2) / 2;
+    const labelY = (y1 + y2) / 2 - 7;
+    return `<g class="flow-edge"><path d="${path}" marker-end="url(#flowArrow)"></path><text x="${labelX}" y="${labelY}" text-anchor="middle">${esc(resultName(flow.result))}</text></g>`;
+  }).join("");
+  const nodeSvg = config.states.map((item) => {
+    const point = positions[item.code];
+    const count = config.flows.filter((flow) => flow.current === item.code).length;
+    return `<g class="flow-node-svg ${item.terminal ? "terminal" : ""}" data-flow-state="${esc(item.code)}" role="button" tabindex="0" transform="translate(${point.x} ${point.y})" style="--node-color:${item.color}"><rect class="node-body" width="${nodeWidth}" height="${nodeHeight}" rx="8"></rect><rect class="node-accent" width="4" height="${nodeHeight}" rx="2"></rect><circle class="node-port in" cx="0" cy="${nodeHeight / 2}" r="3"></circle><circle class="node-port out" cx="${nodeWidth}" cy="${nodeHeight / 2}" r="3"></circle><text class="node-title" x="18" y="24">${esc(item.name)}</text><text class="node-stage" x="18" y="42">${esc(item.businessStage || groupLabels[item.group])}</text><g class="node-count" transform="translate(${nodeWidth - 25} 10)"><circle cx="8" cy="8" r="8"></circle><text x="8" y="11" text-anchor="middle">${count}</text></g></g>`;
+  }).join("");
+  $("flowBoard").style.gridTemplateColumns = "none";
+  $("flowBoard").innerHTML = `<svg class="transition-svg" viewBox="0 0 ${canvasWidth} ${canvasHeight}" width="${canvasWidth}" height="${canvasHeight}" aria-label="北汽线索状态流转图"><defs><marker id="flowArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 z"></path></marker><filter id="flowShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#152136" flood-opacity=".12"></feDropShadow></filter></defs>${edgeSvg}${nodeSvg}</svg>`;
   showFlowDetail($("flowDetail").dataset.state && stateByCode($("flowDetail").dataset.state) ? $("flowDetail").dataset.state : "issued");
 }
 function showFlowDetail(code) {
   const item = stateByCode(code); if (!item) return;
-  qsa(".flow-node-card").forEach((node) => node.classList.toggle("selected", node.dataset.flowState === code));
+  qsa(".flow-node-svg").forEach((node) => node.classList.toggle("selected", node.dataset.flowState === code));
   $("flowDetail").dataset.state = code;
   const incoming = state.transitionConfig.flows.filter((flow) => flow.next === code && flow.current !== code);
   const outgoing = state.transitionConfig.flows.filter((flow) => flow.current === code);
@@ -230,6 +267,7 @@ $("stateTree").addEventListener("click", (event) => { const target = event.targe
 $("stateRows").addEventListener("click", (event) => { const edit = event.target.closest("[data-edit-state]"); const remove = event.target.closest("[data-delete-state]"); if (edit) openTransitionModal("state", edit.dataset.editState); if (remove) deleteState(remove.dataset.deleteState); });
 $("strategyRows").addEventListener("click", (event) => { const edit = event.target.closest("[data-edit-flow]"); const remove = event.target.closest("[data-delete-flow]"); if (edit) openTransitionModal("flow", edit.dataset.editFlow); if (remove) deleteFlow(remove.dataset.deleteFlow); });
 $("flowBoard").addEventListener("click", (event) => { const target = event.target.closest("[data-flow-state]"); if (target) showFlowDetail(target.dataset.flowState); });
+$("flowBoard").addEventListener("keydown", (event) => { const target = event.target.closest("[data-flow-state]"); if (target && ["Enter", " "].includes(event.key)) { event.preventDefault(); showFlowDetail(target.dataset.flowState); } });
 $("transitionModalForm").addEventListener("submit", (event) => { event.preventDefault(); modalMode === "state" ? saveStateFromModal() : saveFlowFromModal(); });
 [$("closeTransitionModal"), $("cancelTransitionModal")].forEach((button) => button.addEventListener("click", closeTransitionModal));
 $("transitionModal").addEventListener("click", (event) => { if (event.target === $("transitionModal")) closeTransitionModal(); });
