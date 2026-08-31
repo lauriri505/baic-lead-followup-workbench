@@ -18,7 +18,7 @@ window.BAIC_ADMIN_DATA = {
     { id: "baic_sales_003", username: "北汽销售003", role: "sales", dataScope: "本人负责线索", status: "停用", lastLogin: "08-29 17:44" }
   ],
   permissions: {
-    tenant_admin: ["查看北汽全部线索", "配置账号与角色", "配置任务规则", "配置跟进节点", "查看操作记录"],
+    tenant_admin: ["查看北汽全部线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录"],
     sales: ["查看本人负责线索", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"]
   },
   taskRules: [
@@ -27,13 +27,61 @@ window.BAIC_ADMIN_DATA = {
     { id: "RULE-CALLBACK", type: "用户约定回访", trigger: "客户要求稍后联系", deadline: "销售手动时间", assignee: "原销售", enabled: true },
     { id: "RULE-DORMANT", type: "沉默回捞", trigger: "暂存线索到期", deadline: "+30天", assignee: "原销售", enabled: true }
   ],
-  nodes: [
-    { id: "NODE-PENDING", order: 1, main: "待跟进", sub: "—", results: ["未接通（第1次）", "已沟通-有意向", "已沟通-无意向", "要求稍后联系", "号码错误"], nextTask: "首次联系 / 普通回访", enabled: true },
-    { id: "NODE-FOLLOWING", order: 2, main: "跟进中", sub: "已联系", results: ["已沟通-有意向", "未接通", "要求稍后联系", "试驾", "放弃购买"], nextTask: "普通回访 / 用户约定回访", enabled: true },
-    { id: "NODE-DORMANT-DRIVE", order: 3, main: "暂存", sub: "试驾", results: ["恢复意向", "未接通", "继续暂存", "放弃购买"], nextTask: "沉默回捞", enabled: true },
-    { id: "NODE-DORMANT-CASH", order: 4, main: "暂存", sub: "确认全款", results: ["恢复意向", "未接通", "继续暂存", "放弃购买"], nextTask: "沉默回捞", enabled: true },
-    { id: "NODE-DORMANT-NO", order: 5, main: "暂存", sub: "无意向购买", results: ["恢复意向", "未接通", "继续暂存", "放弃购买"], nextTask: "沉默回捞", enabled: true },
-    { id: "NODE-LOST", order: 6, main: "战败", sub: "终态", results: [], nextTask: "不生成任务", enabled: true },
-    { id: "NODE-WON", order: 7, main: "成交", sub: "已放款", results: [], nextTask: "不生成任务", enabled: true }
-  ]
+  transitionConfig: {
+    brand: { name: "北汽", code: "baic", version: "V1.0", status: "草稿" },
+    states: [
+      { code: "pending", name: "待跟进", group: "initial", parent: null, level: 1, terminal: false, dormant: false, color: "#345f9f" },
+      { code: "overdue", name: "未跟进（超72h）", group: "lost", parent: null, level: 1, terminal: true, dormant: false, color: "#cf4b4b" },
+      { code: "contacted", name: "已跟进", group: "processing", parent: null, level: 1, terminal: false, dormant: false, color: "#345f9f" },
+      { code: "valid_lead", name: "有效线索", group: "valid", parent: "contacted", level: 2, terminal: false, dormant: false, color: "#28735a" },
+      { code: "invalid_lead", name: "无效线索", group: "invalid", parent: "contacted", level: 2, terminal: false, dormant: false, color: "#8590a5" },
+      { code: "interested", name: "有意向", group: "processing", parent: "valid_lead", level: 3, terminal: false, dormant: false, color: "#28735a" },
+      { code: "prospect_lost", name: "战败", group: "lost", parent: "valid_lead", level: 3, terminal: false, dormant: false, color: "#cf4b4b" },
+      { code: "no_intent", name: "无意向", group: "lost", parent: "invalid_lead", level: 3, terminal: true, dormant: false, color: "#cf4b4b" },
+      { code: "unreach_limit", name: "3次未接通", group: "lost", parent: "invalid_lead", level: 3, terminal: true, dormant: false, color: "#cf4b4b" },
+      { code: "wrong_number", name: "号码错误", group: "lost", parent: "invalid_lead", level: 3, terminal: true, dormant: false, color: "#cf4b4b" },
+      { code: "trial", name: "是否试驾", group: "processing", parent: "interested", level: 4, terminal: false, dormant: false, color: "#28735a" },
+      { code: "visit", name: "是否到店", group: "processing", parent: "interested", level: 4, terminal: false, dormant: false, color: "#28735a" },
+      { code: "deal", name: "是否成交", group: "valid", parent: "interested", level: 4, terminal: true, dormant: false, color: "#f0b429" },
+      { code: "clear_reject", name: "明确拒绝", group: "lost", parent: "prospect_lost", level: 4, terminal: true, dormant: false, color: "#cf4b4b" },
+      { code: "bought_other", name: "已购买其他品牌", group: "lost", parent: "prospect_lost", level: 4, terminal: true, dormant: false, color: "#cf4b4b" }
+    ],
+    results: [
+      { code: "lead_assigned", name: "线索分配（首次联系）", category: "contact", requiresCallbackTime: false, requiresReason: false },
+      { code: "unreachable", name: "未接通", category: "unreachable", requiresCallbackTime: false, requiresReason: false },
+      { code: "interested", name: "已沟通-有意向", category: "contact", requiresCallbackTime: false, requiresReason: false },
+      { code: "no_intent", name: "已沟通-无意向", category: "dormant", requiresCallbackTime: false, requiresReason: true },
+      { code: "callback", name: "要求稍后联系", category: "callback", requiresCallbackTime: true, requiresReason: false },
+      { code: "invalid_number", name: "号码错误", category: "lost", requiresCallbackTime: false, requiresReason: true },
+      { code: "testdrive", name: "暂定试驾", category: "dormant", requiresCallbackTime: false, requiresReason: false },
+      { code: "book_visit", name: "预约到店", category: "contact", requiresCallbackTime: true, requiresReason: false },
+      { code: "confirm_deal", name: "确认成交", category: "contact", requiresCallbackTime: false, requiresReason: false },
+      { code: "abandon", name: "放弃购买", category: "lost", requiresCallbackTime: false, requiresReason: true },
+      { code: "clear_reject", name: "明确拒绝", category: "lost", requiresCallbackTime: false, requiresReason: true },
+      { code: "bought_other", name: "已购买其他品牌", category: "lost", requiresCallbackTime: false, requiresReason: true }
+    ],
+    flows: [
+      { id: 21, current: "pending", result: "lead_assigned", next: "pending", unreachable: false, reason: false, task: "FIRST_CONTACT", deadline: "+30分钟" },
+      { id: 1, current: "pending", result: "unreachable", next: "contacted", unreachable: true, reason: false, task: "CALLBACK", deadline: "+2小时", retry: true },
+      { id: 2, current: "pending", result: "interested", next: "valid_lead", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
+      { id: 3, current: "pending", result: "no_intent", next: "invalid_lead", unreachable: false, reason: true, task: "CALLBACK", deadline: "+30天", reactivation: true },
+      { id: 4, current: "pending", result: "callback", next: "contacted", unreachable: false, reason: false, task: "CALLBACK", deadline: "手动填写" },
+      { id: 5, current: "pending", result: "invalid_number", next: "wrong_number", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 6, current: "contacted", result: "unreachable", next: "contacted", unreachable: true, reason: false, task: "CALLBACK", deadline: "+2小时", retry: true },
+      { id: 7, current: "contacted", result: "interested", next: "valid_lead", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
+      { id: 8, current: "contacted", result: "no_intent", next: "invalid_lead", unreachable: false, reason: true, task: "CALLBACK", deadline: "+30天", reactivation: true },
+      { id: 9, current: "contacted", result: "invalid_number", next: "wrong_number", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 10, current: "valid_lead", result: "interested", next: "interested", unreachable: false, reason: false, task: "CALLBACK", deadline: "+2小时" },
+      { id: 11, current: "valid_lead", result: "abandon", next: "prospect_lost", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 12, current: "interested", result: "testdrive", next: "trial", unreachable: false, reason: false, task: "CALLBACK", deadline: "+7天" },
+      { id: 13, current: "interested", result: "book_visit", next: "visit", unreachable: false, reason: false, task: "CALLBACK", deadline: "手动填写" },
+      { id: 14, current: "interested", result: "confirm_deal", next: "deal", unreachable: false, reason: false, task: null, deadline: "—" },
+      { id: 15, current: "interested", result: "abandon", next: "prospect_lost", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 16, current: "prospect_lost", result: "clear_reject", next: "clear_reject", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 17, current: "prospect_lost", result: "bought_other", next: "bought_other", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 18, current: "invalid_lead", result: "no_intent", next: "no_intent", unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 19, current: "invalid_lead", result: "unreachable", next: "unreach_limit", unreachable: true, reason: false, task: null, deadline: "—" },
+      { id: 20, current: "invalid_lead", result: "invalid_number", next: "wrong_number", unreachable: false, reason: true, task: null, deadline: "—" }
+    ]
+  }
 };

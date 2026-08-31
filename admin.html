@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="北汽 CRM 管理员后台演示">
   <title>北汽管理员后台</title>
-  <link rel="stylesheet" href="admin.css?v=20260831-1">
+  <link rel="stylesheet" href="admin.css?v=20260831-2">
 </head>
 <body>
   <div class="admin-app">
@@ -17,7 +17,7 @@
         <button class="nav-item" data-view="leads" type="button"><span>02</span>线索数据</button>
         <button class="nav-item" data-view="accounts" type="button"><span>03</span>账号与角色</button>
         <button class="nav-item" data-view="tasks" type="button"><span>04</span>任务配置</button>
-        <button class="nav-item" data-view="nodes" type="button"><span>05</span>跟进节点</button>
+        <button class="nav-item" data-view="nodes" type="button"><span>05</span>线索流转配置</button>
       </nav>
       <a class="workbench-link" href="index.html">返回销售工作台 →</a>
     </aside>
@@ -61,17 +61,53 @@
         </section>
 
         <section class="admin-view" id="nodesView" hidden>
-          <div class="view-heading"><div><p class="eyebrow">FOLLOW-UP NODES</p><h1>线索跟进节点</h1><p>配置每个线索阶段可选择的跟进结果，以及后续任务类型。</p></div><button class="primary-button" id="showNodeForm" type="button">+ 新增节点</button></div>
-          <div class="node-explainer"><div><span>1</span><strong>当前节点</strong><small>销售进入工作台时的线索状态</small></div><div><span>2</span><strong>允许的跟进结果</strong><small>控制销售可选操作</small></div><div><span>3</span><strong>后续任务</strong><small>提交后生成下一任务</small></div></div>
-          <form class="inline-create admin-panel" id="nodeForm" hidden><div><label for="nodeMain">大状态</label><input id="nodeMain" required placeholder="例如：暂存"></div><div><label for="nodeSub">子状态</label><input id="nodeSub" required placeholder="例如：待补充资料"></div><div><label for="nodeTask">后续任务</label><input id="nodeTask" required placeholder="例如：普通回访"></div><div class="wide-field"><label for="nodeResults">允许的跟进结果</label><input id="nodeResults" required placeholder="多个结果用中文逗号分隔"></div><button class="primary-button" type="submit">添加节点</button><button class="secondary-button cancel-inline" type="button">取消</button></form>
-          <div class="node-list" id="nodeList"></div>
-          <div class="sticky-save"><span>节点调整只影响后续进入工作台的线索，不追溯已完成记录。</span><button class="primary-button" id="saveNodes" type="button">保存节点配置</button></div>
+          <div class="view-heading transition-heading"><div><p class="eyebrow">LEAD TRANSITION RULES</p><h1>北汽线索流转配置</h1><p>统一管理状态节点、跟进结果、状态流转和后续任务。</p></div><span class="scope-chip">当前品牌：北汽 · BAIC</span></div>
+          <div class="transition-summary" id="transitionSummary"></div>
+          <section class="admin-panel transition-panel">
+            <div class="config-tabs" role="tablist" aria-label="线索流转配置">
+              <button class="config-tab active" data-config-tab="states" type="button">节点字典</button>
+              <button class="config-tab" data-config-tab="strategies" type="button">跟进策略</button>
+              <button class="config-tab" data-config-tab="diagram" type="button">流转图</button>
+              <button class="config-tab" data-config-tab="preview" type="button">配置预览</button>
+            </div>
+
+            <div class="config-pane active" id="configStatesPane">
+              <div class="config-toolbar"><div><h2>节点字典</h2><p>定义北汽线索状态层级及终态属性。</p></div><button class="primary-button" id="showStateForm" type="button">+ 添加节点</button></div>
+              <div class="state-tree" id="stateTree"></div>
+              <div class="table-wrap transition-table"><table><thead><tr><th>状态编码</th><th>显示名称</th><th>分组</th><th>父状态</th><th>层级</th><th>属性</th><th>操作</th></tr></thead><tbody id="stateRows"></tbody></table></div>
+            </div>
+
+            <div class="config-pane" id="configStrategiesPane" hidden>
+              <div class="config-toolbar"><div><h2>跟进策略</h2><p>当前节点 + 跟进结果 → 新节点 + 后续任务。</p></div><button class="primary-button" id="showStrategyForm" type="button">+ 添加策略</button></div>
+              <div class="strategy-filter"><select id="strategyStateFilter"><option value="">全部当前节点</option></select><span id="strategyCount"></span></div>
+              <div class="table-wrap transition-table"><table><thead><tr><th>当前节点</th><th>跟进结果</th><th>流转至</th><th>附加更新</th><th>后续任务</th><th>截止规则</th><th>操作</th></tr></thead><tbody id="strategyRows"></tbody></table></div>
+            </div>
+
+            <div class="config-pane" id="configDiagramPane" hidden>
+              <div class="config-toolbar"><div><h2>状态流转图</h2><p>点击节点查看所有进入和离开该节点的规则。</p></div><span class="diagram-hint">实线为跨节点流转 · 虚线为状态保持</span></div>
+              <div class="flow-legend" id="flowLegend"></div>
+              <div class="flow-board" id="flowBoard"></div>
+              <div class="flow-detail" id="flowDetail"></div>
+            </div>
+
+            <div class="config-pane" id="configPreviewPane" hidden>
+              <div class="config-toolbar"><div><h2>配置预览</h2><p>用于评审、备份或交给开发初始化配置。</p></div><div class="toolbar-actions"><button class="secondary-button" id="copyTransitionConfig" type="button">复制配置</button><button class="primary-button" id="exportTransitionConfig" type="button">导出 JSON</button></div></div>
+              <pre class="json-preview" id="transitionJson"></pre>
+            </div>
+          </section>
+          <div class="sticky-save"><span id="transitionSaveHint">修改后需保存才会应用到后续线索，不追溯历史记录。</span><button class="primary-button" id="saveTransitions" type="button">保存线索流转配置</button></div>
         </section>
       </main>
     </div>
   </div>
+  <div class="admin-modal" id="transitionModal" hidden>
+    <div class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="transitionModalTitle">
+      <div class="modal-header"><div><p class="eyebrow" id="transitionModalEyebrow">TRANSITION CONFIG</p><h2 id="transitionModalTitle">添加节点</h2></div><button class="modal-close" id="closeTransitionModal" type="button" aria-label="关闭">×</button></div>
+      <form id="transitionModalForm"><div class="modal-body" id="transitionModalBody"></div><div class="modal-footer"><button class="secondary-button" id="cancelTransitionModal" type="button">取消</button><button class="primary-button" type="submit">保存配置</button></div></form>
+    </div>
+  </div>
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260831-1"></script>
-  <script src="admin.js?v=20260831-1"></script>
+  <script src="admin-data.js?v=20260831-2"></script>
+  <script src="admin.js?v=20260831-2"></script>
 </body>
 </html>
