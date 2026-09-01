@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="北汽 CRM 管理员后台演示">
   <title>北汽管理员后台</title>
-  <link rel="stylesheet" href="admin.css?v=20260901-7">
+  <link rel="stylesheet" href="admin.css?v=20260901-8">
 </head>
 <body>
   <div class="admin-app">
@@ -89,7 +89,7 @@
               <div class="config-toolbar"><div><h2>跟进策略</h2><p>当前节点 + 跟进结果 → 新节点 + 后续任务。</p></div><button class="primary-button" id="showStrategyForm" type="button">+ 添加策略</button></div>
               <div class="strategy-filter"><select id="strategyStateFilter"><option value="">全部当前节点</option></select><span id="strategyCount"></span></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>当前节点</th><th>跟进结果</th><th>流转至</th><th>附加更新</th><th>后续任务</th><th>截止规则</th><th>操作</th></tr></thead><tbody id="strategyRows"></tbody></table></div>
-              <section class="progress-rule-panel"><div><h3>工作台推进字段</h3><p>本表决定“本次跟进”展示哪些字段及其出现条件，工作台直接读取该配置。</p></div><div class="table-wrap transition-table"><table><thead><tr><th>顺序</th><th>字段名称</th><th>可选值</th><th>适用跟进结果</th><th>出现条件</th></tr></thead><tbody id="progressFieldRows"></tbody></table></div></section>
+              <section class="progress-rule-panel"><div><h3>工作台推进字段</h3><p>本表决定“本次跟进”展示哪些字段、填写要求及提交后的任务，工作台直接读取该配置。</p></div><div class="table-wrap transition-table"><table><thead><tr><th>顺序</th><th>字段名称</th><th>适用场景</th><th>出现条件</th><th>提交后行为</th></tr></thead><tbody id="progressFieldRows"></tbody></table></div></section>
               <section class="progress-rule-panel"><div><h3>客户推进节点判定</h3><p>销售可在一次跟进中更新已展示的多个推进字段，系统按优先级取最深阶段作为当前节点。</p></div><div class="table-wrap transition-table"><table><thead><tr><th>优先级</th><th>推进字段</th><th>取值</th><th>附加条件</th><th>判定节点</th></tr></thead><tbody id="progressStateRows"></tbody></table></div></section>
             </div>
 
@@ -117,7 +117,7 @@
     </div>
   </div>
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260901-7"></script>
-  <script src="admin.js?v=20260901-7"></script>
+  <script src="admin-data.js?v=20260901-8"></script>
+  <script src="admin.js?v=20260901-8"></script>
 </body>
 </html>

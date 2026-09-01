@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v11";
+const storageKey = "baic_admin_demo_config_v12";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -162,9 +162,17 @@ function renderProgressFieldRows() {
   const valueLabels = { YES: "是", NO: "否" };
   $("progressFieldRows").innerHTML = fields.map((field) => {
     const results = (field.resultCodes || []).map((code) => resultName(code)).join("、") || "全部跟进结果";
-    const condition = field.dependsOn ? `${fieldLabels[field.dependsOn.field] || field.dependsOn.field} = ${valueLabels[field.dependsOn.value] || field.dependsOn.value}` : "选择适用跟进结果后展示";
-    const values = (field.values || []).map((value) => valueLabels[value] || value).join(" / ");
-    return `<tr><td><strong>${field.sortOrder || "—"}</strong></td><td><strong>${esc(field.name)}</strong><small class="table-code">${esc(field.code)}</small></td><td>${esc(values)}</td><td>${esc(results)}</td><td>${esc(condition)}</td></tr>`;
+    const states = (field.stateCodes || []).map((code) => stateName(code)).join("、") || "全部状态";
+    const taskScenes = (field.taskRuleIds || []).map((id) => state.taskRules.find((rule) => rule.id === id)?.trigger || id).join("、");
+    const scene = [results, states, taskScenes].filter(Boolean).join("；");
+    const condition = field.dependsOn ? `${fieldLabels[field.dependsOn.field] || field.dependsOn.field} = ${valueLabels[field.dependsOn.value] || field.dependsOn.value}` : "进入适用场景后展示";
+    const actions = [];
+    if (field.required) actions.push("必填");
+    if (field.inputWhen) actions.push(`${valueLabels[field.inputWhen.value] || field.inputWhen.value}时填写${field.inputWhen.name}`);
+    Object.entries(field.taskRulesByValue || {}).forEach(([value, ids]) => actions.push(`${valueLabels[value] || value}：生成${ids.map((id) => state.taskRules.find((rule) => rule.id === id)?.trigger || id).join("、")}`));
+    (field.reasonRequiredValues || []).forEach((value) => actions.push(`${valueLabels[value] || value}：原因必填`));
+    (field.terminalValues || []).forEach((value) => actions.push(`${valueLabels[value] || value}：进入终态`));
+    return `<tr><td><strong>${field.sortOrder || "—"}</strong></td><td><strong>${esc(field.name)}</strong><small class="table-code">${esc(field.code)} · ${(field.values || []).map((value) => valueLabels[value] || value).join(" / ")}</small></td><td>${esc(scene)}</td><td>${esc(condition)}</td><td><div class="update-tags">${actions.map((item) => `<span>${esc(item)}</span>`).join("")}</div></td></tr>`;
   }).join("") || `<tr><td colspan="5" class="empty-cell">尚未配置工作台推进字段</td></tr>`;
 }
 function renderFlowBoard() {
@@ -337,7 +345,7 @@ function validateTransitions() {
   const states = new Set(state.transitionConfig.states.map((item) => item.code)); const results = new Set(state.transitionConfig.results.map((item) => item.code)); const tags = new Set((state.transitionConfig.leadTags || []).map((item) => item.code)); const qualities = new Set((state.transitionConfig.qualityOptions || []).map((item) => item.code)); const taskRules = new Set(state.taskRules.map((item) => item.id)); const combinations = new Set(); const errors = [];
   state.transitionConfig.states.forEach((item) => { if (item.parent && !states.has(item.parent)) errors.push(`${item.name} 的父节点不存在`); });
   const progressFields = new Set((state.transitionConfig.progressFields || []).map((item) => item.code));
-  (state.transitionConfig.progressFields || []).forEach((field) => { if (field.dependsOn && !progressFields.has(field.dependsOn.field)) errors.push(`推进字段 ${field.name} 的出现条件引用了不存在的字段`); (field.resultCodes || []).forEach((code) => { if (!results.has(code)) errors.push(`推进字段 ${field.name} 引用了不存在的跟进结果`); }); });
+  (state.transitionConfig.progressFields || []).forEach((field) => { if (field.dependsOn && !progressFields.has(field.dependsOn.field)) errors.push(`推进字段 ${field.name} 的出现条件引用了不存在的字段`); (field.resultCodes || []).forEach((code) => { if (!results.has(code)) errors.push(`推进字段 ${field.name} 引用了不存在的跟进结果`); }); (field.stateCodes || []).forEach((code) => { if (!states.has(code)) errors.push(`推进字段 ${field.name} 引用了不存在的状态`); }); [...(field.taskRuleIds || []), ...Object.values(field.taskRulesByValue || {}).flat()].forEach((id) => { if (!taskRules.has(id)) errors.push(`推进字段 ${field.name} 引用了不存在的任务规则`); }); });
   state.transitionConfig.flows.forEach((flow) => { if (!states.has(flow.current) || !states.has(flow.next)) errors.push(`规则 ${flow.id} 引用了不存在的节点`); if (!results.has(flow.result)) errors.push(`规则 ${flow.id} 引用了不存在的跟进结果`); if (!qualities.has(flow.qualityUpdate)) errors.push(`规则 ${flow.id} 未配置有效性更新`); if (flow.task && !taskRules.has(flow.taskRuleId)) errors.push(`规则 ${flow.id} 未绑定有效的任务规则`); (flow.setTags || []).forEach((tag) => { if (!tags.has(tag)) errors.push(`规则 ${flow.id} 引用了不存在的线索标签`); }); const key = `${flow.current}:${flow.result}`; if (combinations.has(key)) errors.push(`${stateName(flow.current)} + ${resultName(flow.result)} 存在重复规则`); combinations.add(key); });
   return errors;
 }

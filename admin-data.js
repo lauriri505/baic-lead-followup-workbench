@@ -5,7 +5,7 @@ window.BAIC_ADMIN_DATA = {
     { id: "BAIC-LD-260831-001", name: "María Flores", phone: "5512789042", source: "北汽品牌官网", type: "金融", series: "BJ40", model: "Plus", status: "未跟进", subStatus: "正常等待跟进", quality: "UNKNOWN", assignee: "北汽销售001", createdAt: "2026-08-31 09:42", task: "首次联系", taskStatus: "待处理" },
     { id: "BAIC-LD-260831-002", name: "Carlos Rivera", phone: "5583017265", source: "金融计算器", type: "金融", series: "X55", model: "Honor", status: "未跟进", subStatus: "第1次未接通", quality: "UNKNOWN", assignee: "北汽销售002", createdAt: "2026-08-31 09:18", task: "普通回访", taskStatus: "处理中" },
     { id: "BAIC-LD-260831-003", name: "Ana Sánchez", phone: "5528901437", source: "试驾活动页", type: "试驾", series: "BJ30", model: "Exclusive", status: "已跟进", subStatus: "有意向 · 潜客", quality: "VALID", assignee: "北汽销售001", createdAt: "2026-08-31 08:55", task: "普通回访", taskStatus: "处理中" },
-    { id: "BAIC-LD-260830-016", name: "Jorge Medina", phone: "5541198702", source: "经销商二维码", type: "全款", series: "EU5", model: "Luxury", status: "已跟进", subStatus: "已到店未成交", quality: "VALID", assignee: "北汽销售003", createdAt: "2026-08-30 16:24", task: "普通回访", taskStatus: "待处理" },
+    { id: "BAIC-LD-260830-016", name: "Jorge Medina", phone: "5541198702", source: "经销商二维码", type: "全款", series: "EU5", model: "Luxury", status: "已跟进", subStatus: "未成交（原因已记录）", quality: "VALID", assignee: "北汽销售003", createdAt: "2026-08-30 16:24", task: "—", taskStatus: "已结束" },
     { id: "BAIC-LD-260830-011", name: "Lucía Torres", phone: "5590276148", source: "WhatsApp活动", type: "金融", series: "X7", model: "Premium", status: "过期未跟进", subStatus: "超过72小时", quality: "UNKNOWN", assignee: "北汽销售002", createdAt: "2026-08-30 14:10", task: "首次联系", taskStatus: "已逾期" },
     { id: "BAIC-LD-260829-027", name: "Miguel García", phone: "5567319204", source: "车型详情页", type: "金融", series: "BJ40", model: "Honor", status: "无效线索", subStatus: "号码错误", quality: "INVALID", assignee: "北汽销售001", createdAt: "2026-08-29 18:32", task: "—", taskStatus: "已结束" },
     { id: "BAIC-LD-260829-019", name: "Sofía Castro", phone: "5536801742", source: "北汽品牌官网", type: "金融", series: "X55", model: "Luxury", status: "成交", subStatus: "已成交", quality: "VALID", assignee: "北汽销售003", createdAt: "2026-08-29 11:05", task: "—", taskStatus: "已完成" },
@@ -25,9 +25,10 @@ window.BAIC_ADMIN_DATA = {
     { id: "RULE-FIRST", group: "FIRST_CONTACT", type: "首次联系", trigger: "新线索分配", deadline: "30分钟", assignee: "线索负责人", enabled: true },
     { id: "RULE-OVERDUE", group: "FIRST_CONTACT", type: "首次联系", trigger: "超过72小时仍未完成首次有效跟进", deadline: "立即处理", assignee: "线索负责人", enabled: true },
     { id: "RULE-RETRY", group: "CALLBACK", type: "普通回访", trigger: "第1或第2次未接通", deadline: "+2小时", assignee: "原销售", enabled: true },
-    { id: "RULE-PROSPECT", group: "CALLBACK", type: "普通回访", trigger: "客户有意向但仍需推进", deadline: "+1天", assignee: "原销售", enabled: true },
-    { id: "RULE-TRIAL", group: "CALLBACK", type: "普通回访", trigger: "已预约试驾或预约未到店", deadline: "+1天", assignee: "原销售", enabled: true },
-    { id: "RULE-DEAL", group: "CALLBACK", type: "普通回访", trigger: "已到店但尚未成交", deadline: "+1天", assignee: "原销售", enabled: true }
+    { id: "RULE-NO-TRIAL", group: "CALLBACK", type: "普通回访", trigger: "客户有意向但暂未预约试驾", deadline: "+1天", assignee: "原销售", enabled: true },
+    { id: "RULE-TRIAL-BEFORE", group: "CALLBACK", type: "普通回访", trigger: "试驾前一天提醒并确认行程", deadline: "预约试驾时间 -1天", assignee: "原销售", enabled: true },
+    { id: "RULE-TRIAL-DAY", group: "CALLBACK", type: "普通回访", trigger: "试驾当天确认客户是否到店", deadline: "预约试驾时间", assignee: "原销售", enabled: true },
+    { id: "RULE-NO-SHOW", group: "CALLBACK", type: "普通回访", trigger: "预约试驾未到店，继续联系", deadline: "+1天", assignee: "原销售", enabled: true }
   ],
   transitionConfig: {
     brand: { name: "北汽", code: "baic", version: "V1.0", status: "草稿", source: "北汽节点图" },
@@ -39,7 +40,7 @@ window.BAIC_ADMIN_DATA = {
       { code: "trial_booked", name: "已预约试驾", group: "followed", businessStage: "已跟进", parent: "followed_prospect", level: 5, terminal: false, dormant: false, color: "#2fcf9f" },
       { code: "appointment_no_show", name: "预约未到店", group: "followed", businessStage: "已跟进", parent: "trial_booked", level: 6, terminal: false, dormant: false, color: "#4d8df7" },
       { code: "visited", name: "已到店", group: "followed", businessStage: "已跟进", parent: "trial_booked", level: 6, terminal: false, dormant: false, color: "#2fcf9f" },
-      { code: "visited_not_deal", name: "已到店未成交", group: "followed", businessStage: "已跟进", parent: "visited", level: 7, terminal: false, dormant: false, color: "#4d8df7" },
+      { code: "visited_not_deal", name: "未成交", group: "followed", businessStage: "已跟进", parent: "visited", level: 7, terminal: true, dormant: false, color: "#dc6262" },
       { code: "won", name: "已成交", group: "won", businessStage: "成交", parent: "visited", level: 7, terminal: true, dormant: false, color: "#19a974" },
       { code: "followed_lost_reject", name: "战败 · 明确拒绝", group: "followed", businessStage: "已跟进", parent: "followed_prospect", level: 7, terminal: true, dormant: false, color: "#dc6262" },
       { code: "followed_lost_other", name: "战败 · 已购买其他品牌", group: "followed", businessStage: "已跟进", parent: "followed_prospect", level: 7, terminal: true, dormant: false, color: "#dc6262" },
@@ -53,9 +54,9 @@ window.BAIC_ADMIN_DATA = {
     ],
     leadTags: [],
     progressFields: [
-      { code: "trialStatus", name: "是否预约试驾", values: ["YES", "NO"], resultCodes: ["interested"], sortOrder: 10 },
-      { code: "visitStatus", name: "是否到店", values: ["YES", "NO"], resultCodes: ["interested"], dependsOn: { field: "trialStatus", value: "YES" }, sortOrder: 20 },
-      { code: "dealStatus", name: "是否成交", values: ["YES", "NO"], resultCodes: ["interested"], dependsOn: { field: "visitStatus", value: "YES" }, sortOrder: 30 }
+      { code: "trialStatus", name: "是否预约试驾", values: ["YES", "NO"], resultCodes: ["interested"], stateCodes: ["not_followed", "overdue", "followed_prospect", "appointment_no_show"], required: true, sortOrder: 10, inputWhen: { value: "YES", code: "trialAppointmentAt", name: "预约试驾时间", type: "datetime-local", required: true }, taskRulesByValue: { YES: ["RULE-TRIAL-BEFORE", "RULE-TRIAL-DAY"], NO: ["RULE-NO-TRIAL"] } },
+      { code: "visitStatus", name: "是否已到店", values: ["YES", "NO"], resultCodes: ["interested"], stateCodes: ["trial_booked"], taskRuleIds: ["RULE-TRIAL-DAY"], required: true, sortOrder: 20, taskRulesByValue: { NO: ["RULE-NO-SHOW"] } },
+      { code: "dealStatus", name: "是否已成交", values: ["YES", "NO"], resultCodes: ["interested"], stateCodes: ["trial_booked"], taskRuleIds: ["RULE-TRIAL-DAY"], dependsOn: { field: "visitStatus", value: "YES" }, required: true, reasonRequiredValues: ["NO"], sortOrder: 30, terminalValues: ["YES", "NO"] }
     ],
     progressStateRules: [
       { priority: 60, field: "dealStatus", value: "YES", next: "won" },
@@ -77,31 +78,25 @@ window.BAIC_ADMIN_DATA = {
     flows: [
       { id: 1, current: "issued", result: "assigned", next: "not_followed", qualityUpdate: "UNKNOWN", unreachable: false, reason: false, task: "FIRST_CONTACT", taskRuleId: "RULE-FIRST", deadline: "30分钟" },
       { id: 2, current: "not_followed", result: "timeout", next: "overdue", qualityUpdate: "UNKNOWN", unreachable: false, reason: false, task: "FIRST_CONTACT", taskRuleId: "RULE-OVERDUE", deadline: "立即处理" },
-      { id: 3, current: "not_followed", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-PROSPECT", deadline: "+1天" },
+      { id: 3, current: "not_followed", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-NO-TRIAL", deadline: "+1天" },
       { id: 4, current: "not_followed", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 5, current: "not_followed", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 6, current: "not_followed", result: "unreachable", next: "not_followed", qualityUpdate: "UNKNOWN", unreachable: true, terminalAt: 3, terminalNext: "invalid_unreachable", terminalQuality: "INVALID", reason: false, task: "CALLBACK", taskRuleId: "RULE-RETRY", deadline: "+2小时" },
       { id: 7, current: "not_followed", result: "invalid_number", next: "invalid_number", qualityUpdate: "INVALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 8, current: "overdue", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-PROSPECT", deadline: "+1天" },
+      { id: 8, current: "overdue", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-NO-TRIAL", deadline: "+1天" },
       { id: 9, current: "overdue", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 10, current: "overdue", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 11, current: "overdue", result: "unreachable", next: "overdue", qualityUpdate: "UNKNOWN", unreachable: true, terminalAt: 3, terminalNext: "invalid_unreachable", terminalQuality: "INVALID", reason: false, task: "CALLBACK", taskRuleId: "RULE-RETRY", deadline: "+2小时" },
       { id: 12, current: "overdue", result: "invalid_number", next: "invalid_number", qualityUpdate: "INVALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 13, current: "followed_prospect", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-PROSPECT", deadline: "+1天" },
+      { id: 13, current: "followed_prospect", result: "interested", next: "followed_prospect", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-NO-TRIAL", deadline: "+1天" },
       { id: 14, current: "followed_prospect", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 15, current: "followed_prospect", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 16, current: "trial_booked", result: "interested", next: "trial_booked", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-TRIAL", deadline: "+1天" },
+      { id: 16, current: "trial_booked", result: "interested", next: "trial_booked", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-NO-SHOW", deadline: "+1天" },
       { id: 17, current: "trial_booked", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 18, current: "trial_booked", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 19, current: "appointment_no_show", result: "interested", next: "appointment_no_show", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-TRIAL", deadline: "+1天" },
+      { id: 19, current: "appointment_no_show", result: "interested", next: "appointment_no_show", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-NO-TRIAL", deadline: "+1天" },
       { id: 20, current: "appointment_no_show", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 21, current: "appointment_no_show", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 22, current: "visited", result: "interested", next: "visited", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-DEAL", deadline: "+1天" },
-      { id: 23, current: "visited", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 24, current: "visited", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 25, current: "visited_not_deal", result: "interested", next: "visited_not_deal", qualityUpdate: "VALID", unreachable: false, reason: false, task: "CALLBACK", taskRuleId: "RULE-DEAL", deadline: "+1天" },
-      { id: 26, current: "visited_not_deal", result: "clear_reject", next: "followed_lost_reject", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 27, current: "visited_not_deal", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" }
+      { id: 21, current: "appointment_no_show", result: "bought_other", next: "followed_lost_other", qualityUpdate: "VALID", unreachable: false, reason: true, task: null, deadline: "—" }
     ],
     journeyDiagram: {
       width: 2160,
@@ -118,11 +113,12 @@ window.BAIC_ADMIN_DATA = {
         { id: "prospect", label: "有意向潜客", subtitle: "有效线索", kind: "state", stateCode: "followed_prospect", x: 1010, y: 300 },
         { id: "appointment", label: "预约试驾？", subtitle: "推进判断", kind: "decision", x: 1250, y: 220 },
         { id: "booked", label: "已预约试驾", subtitle: "有效线索", kind: "state", stateCode: "trial_booked", x: 1470, y: 120 },
+        { id: "trialTasks", label: "生成2条试驾回访任务", subtitle: "前1天 + 当天", kind: "task", x: 1470, y: 250 },
         { id: "arrival", label: "是否到店？", subtitle: "推进判断", kind: "decision", x: 1685, y: 230 },
         { id: "noShow", label: "预约未到店", subtitle: "继续跟进", kind: "state", stateCode: "appointment_no_show", x: 1685, y: 420 },
         { id: "arrived", label: "已到店", subtitle: "有效线索", kind: "state", stateCode: "visited", x: 1685, y: 70 },
         { id: "deal", label: "是否成交？", subtitle: "推进判断", kind: "decision", x: 1900, y: 210 },
-        { id: "notDeal", label: "已到店未成交", subtitle: "继续跟进", kind: "state", stateCode: "visited_not_deal", x: 1900, y: 420 },
+        { id: "notDeal", label: "未成交", subtitle: "原因必填 · 终态", kind: "failure", stateCode: "visited_not_deal", x: 1900, y: 420 },
         { id: "won", label: "成交", subtitle: "终态", kind: "success", stateCode: "won", x: 1900, y: 40 },
         { id: "lostReject", label: "战败：明确拒绝", subtitle: "有效线索终态", kind: "failure", stateCode: "followed_lost_reject", x: 1460, y: 610 },
         { id: "lostOther", label: "战败：已购买其他品牌", subtitle: "有效线索终态", kind: "failure", stateCode: "followed_lost_other", x: 1700, y: 610 }
@@ -134,9 +130,9 @@ window.BAIC_ADMIN_DATA = {
         { from: "contactResult", to: "invalidUnreachable", label: "第3次未接通" }, { from: "contactResult", to: "invalidNumber", label: "号码错误" },
         { from: "contactResult", to: "lostReject", label: "明确拒绝" }, { from: "contactResult", to: "lostOther", label: "购买其他品牌" },
         { from: "contactResult", to: "prospect", label: "有意向" }, { from: "prospect", to: "appointment" },
-        { from: "appointment", to: "retryTask", label: "否" }, { from: "appointment", to: "booked", label: "是" }, { from: "booked", to: "arrival" },
+        { from: "appointment", to: "retryTask", label: "否 · 生成回访" }, { from: "appointment", to: "booked", label: "是 · 填预约时间" }, { from: "booked", to: "trialTasks" }, { from: "trialTasks", to: "arrival" },
         { from: "arrival", to: "noShow", label: "否" }, { from: "noShow", to: "retryTask" }, { from: "arrival", to: "arrived", label: "是" },
-        { from: "arrived", to: "deal" }, { from: "deal", to: "notDeal", label: "否" }, { from: "notDeal", to: "retryTask" }, { from: "deal", to: "won", label: "是" },
+        { from: "arrived", to: "deal" }, { from: "deal", to: "notDeal", label: "否 · 原因必填" }, { from: "deal", to: "won", label: "是" },
         { from: "prospect", to: "lostReject", label: "后续明确拒绝" }, { from: "prospect", to: "lostOther", label: "后续购买其他品牌" }
       ]
     }

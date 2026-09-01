@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v11";
+const adminStorageKey = "baic_admin_demo_config_v12";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -22,7 +22,7 @@ const messages = {
     "field.name": "姓名", "field.phone": "手机号", "field.brand": "品牌", "field.series": "车系", "field.model": "车型", "field.region": "地区", "field.address": "地址",
     "dealer.finance": "经销商与金融信息", "dealer.name": "经销商", "dealer.placeholder": "输入或选择经销商", "dealer.hint": "可输入名称联想选择", "finance.price": "车价格", "finance.rate": "年利率", "finance.term": "贷款期数",
     "prospect.title": "客户推进信息", "prospect.description": "三个字段独立累计，用于筛选和统计", "prospect.trial": "是否预约试驾", "prospect.visit": "是否到店", "prospect.deal": "是否成交", "prospect.unmarked": "未标记", "prospect.yes": "是", "prospect.no": "否",
-    "progressUpdate.title": "客户推进更新", "progressUpdate.description": "字段及出现条件读取后台配置；已展示字段可在本次一并更新", "progressUpdate.optional": "按配置展示", "progressUpdate.current": "当前：{value}", "progressUpdate.keep": "不更新", "progressUpdate.yes": "是", "progressUpdate.no": "否", "progressUpdate.preview": "推进信息更新", "progressUpdate.unchanged": "保持当前进度",
+    "progressUpdate.title": "客户推进更新", "progressUpdate.description": "字段、填写要求和后续任务读取后台配置", "progressUpdate.optional": "按配置展示", "progressUpdate.current": "当前：{value}", "progressUpdate.keep": "不更新", "progressUpdate.yes": "是", "progressUpdate.no": "否", "progressUpdate.preview": "推进信息更新", "progressUpdate.unchanged": "保持当前进度", "progressUpdate.notDealReason": "未成交原因",
     "follow.title": "本次跟进", "follow.description": "当前任务决定跟进内容，业务状态随跟进结果流转", "follow.scenario": "切换普通线索演示场景", "follow.currentState": "当前状态", "follow.result": "跟进结果", "follow.reason": "原因", "follow.reasonPlaceholder": "请输入具体原因", "follow.callbackNote": "用户约定说明", "follow.callbackPlaceholder": "例如：下班后方便接听", "follow.nextTime": "下一次联系时间", "follow.timeHint": "系统已按规则给出默认值，销售可以调整。", "follow.afterState": "提交后状态", "follow.nextTask": "下一任务", "follow.waiting": "等待选择跟进结果", "follow.noTask": "不再生成任务", "follow.attempts": "未接通 {count} 次",
     "records.operations": "操作记录", "records.notes": "跟踪记事", "records.description": "系统自动记录，按时间倒序展示。", "records.operator": "操作人：{operator}",
     "notes.addTitle": "销售手动添加跟踪记录", "notes.description": "记录沟通中的关键信息。", "notes.content": "跟踪内容", "notes.placeholder": "只记录用户输入或销售确认的关键信息", "notes.add": "添加记录", "notes.record": "跟踪记录",
@@ -39,7 +39,7 @@ const messages = {
     "result.invalid.label": "号码错误", "result.invalid.action": "转为战败终态", "result.invalid.deadline": "不再生成任务",
     "result.abandon.label": "放弃购买", "result.abandon.action": "转为战败终态", "result.abandon.deadline": "不再生成任务",
     "result.keepDormant.label": "继续暂存", "result.keepDormant.action": "保持当前暂存状态", "result.keepDormant.deadline": "默认 +30天",
-    "validation.result": "请选择跟进结果", "validation.reason": "请填写原因；战败或无意向原因不能为空", "validation.callbackNote": "请填写用户约定说明", "validation.callbackTime": "请选择用户约定的下一次联系时间", "validation.nextTime": "请选择下一次联系时间", "validation.dealer": "请从联想列表中选择有效经销商", "validation.progressConflict": "成交选择“是”时，跟进结果不能同时选择明确拒绝或已购买其他品牌", "validation.progressHierarchy": "客户推进信息不一致：到店必须建立在已预约试驾上，成交必须建立在已到店上",
+    "validation.result": "请选择跟进结果", "validation.reason": "请填写原因；战败或无意向原因不能为空", "validation.callbackNote": "请填写用户约定说明", "validation.callbackTime": "请选择用户约定的下一次联系时间", "validation.nextTime": "请选择下一次联系时间", "validation.dealer": "请从联想列表中选择有效经销商", "validation.progressConflict": "成交选择“是”时，跟进结果不能同时选择明确拒绝或已购买其他品牌", "validation.progressHierarchy": "客户推进信息不一致：到店必须建立在已预约试驾上，成交必须建立在已到店上", "validation.progressRequired": "请选择：{field}", "validation.progressExtra": "请填写：{field}",
     "toast.submitted": "{id} 已提交，当前任务已完成，已进入下一条", "toast.watched": "已关注当前线索", "toast.unwatched": "已取消关注", "toast.noteRequired": "请输入跟踪内容", "toast.noteAdded": "跟踪记录已添加", "toast.noChanges": "当前信息没有变化", "toast.userUpdated": "用户当前信息已更新，原始线索信息未被覆盖", "toast.orderUpdated": "订单状态已更新为：{status}"
   },
   "es-MX": {
@@ -52,7 +52,7 @@ const messages = {
     "field.name": "Nombre", "field.phone": "Teléfono", "field.brand": "Marca", "field.series": "Línea", "field.model": "Versión", "field.region": "Región", "field.address": "Dirección",
     "dealer.finance": "Distribuidor e información financiera", "dealer.name": "Distribuidor", "dealer.placeholder": "Escribe o selecciona un distribuidor", "dealer.hint": "Escribe para buscar por nombre", "finance.price": "Precio del vehículo", "finance.rate": "Tasa anual", "finance.term": "Plazo del crédito",
     "prospect.title": "Avance del prospecto", "prospect.description": "Campos estandarizados para filtros y estadísticas", "prospect.trial": "Cita de prueba de manejo", "prospect.visit": "Visita a distribuidor", "prospect.deal": "Venta cerrada", "prospect.unmarked": "Sin marcar", "prospect.yes": "Sí", "prospect.no": "No",
-    "progressUpdate.title": "Actualización del avance", "progressUpdate.description": "Los campos y sus condiciones provienen de la configuración; puedes actualizar juntos los campos visibles", "progressUpdate.optional": "Según configuración", "progressUpdate.current": "Actual: {value}", "progressUpdate.keep": "Sin cambios", "progressUpdate.yes": "Sí", "progressUpdate.no": "No", "progressUpdate.preview": "Actualización del avance", "progressUpdate.unchanged": "Conservar avance actual",
+    "progressUpdate.title": "Actualización del avance", "progressUpdate.description": "Los campos, requisitos y tareas posteriores provienen de la configuración", "progressUpdate.optional": "Según configuración", "progressUpdate.current": "Actual: {value}", "progressUpdate.keep": "Sin cambios", "progressUpdate.yes": "Sí", "progressUpdate.no": "No", "progressUpdate.preview": "Actualización del avance", "progressUpdate.unchanged": "Conservar avance actual", "progressUpdate.notDealReason": "Motivo de no cierre",
     "follow.title": "Seguimiento actual", "follow.description": "La tarea define las acciones disponibles y el resultado actualiza el estado comercial", "follow.scenario": "Cambiar escenario de prospecto", "follow.currentState": "Estado actual", "follow.result": "Resultado del seguimiento", "follow.reason": "Motivo", "follow.reasonPlaceholder": "Ingresa el motivo específico", "follow.callbackNote": "Acuerdo con el cliente", "follow.callbackPlaceholder": "Ejemplo: llamar después del trabajo", "follow.nextTime": "Próximo contacto", "follow.timeHint": "El sistema propone una fecha según las reglas; el vendedor puede ajustarla.", "follow.afterState": "Estado después de enviar", "follow.nextTask": "Siguiente tarea", "follow.waiting": "Selecciona un resultado", "follow.noTask": "No se generará otra tarea", "follow.attempts": "Sin respuesta: {count} intento(s)",
     "records.operations": "Registro de operaciones", "records.notes": "Notas de seguimiento", "records.description": "Registro automático en orden cronológico inverso.", "records.operator": "Operador: {operator}",
     "notes.addTitle": "Agregar nota de seguimiento", "notes.description": "Registra la información clave de la conversación.", "notes.content": "Contenido de la nota", "notes.placeholder": "Registra únicamente información proporcionada o confirmada por el cliente", "notes.add": "Agregar nota", "notes.record": "Nota de seguimiento",
@@ -69,7 +69,7 @@ const messages = {
     "result.invalid.label": "Número incorrecto", "result.invalid.action": "Marcar como perdido", "result.invalid.deadline": "No se generará otra tarea",
     "result.abandon.label": "Desiste de la compra", "result.abandon.action": "Marcar como perdido", "result.abandon.deadline": "No se generará otra tarea",
     "result.keepDormant.label": "Mantener en pausa", "result.keepDormant.action": "Conservar el estado actual", "result.keepDormant.deadline": "Predeterminado +30 días",
-    "validation.result": "Selecciona un resultado de seguimiento", "validation.reason": "Ingresa un motivo; es obligatorio para prospectos perdidos o sin interés", "validation.callbackNote": "Describe el acuerdo con el cliente", "validation.callbackTime": "Selecciona la fecha acordada con el cliente", "validation.nextTime": "Selecciona la fecha del próximo contacto", "validation.dealer": "Selecciona un distribuidor válido de la lista", "validation.progressConflict": "Si la venta cerrada es “Sí”, el resultado no puede ser rechazo ni compra de otra marca", "validation.progressHierarchy": "El avance no es consistente: la visita requiere una cita de prueba y el cierre requiere una visita",
+    "validation.result": "Selecciona un resultado de seguimiento", "validation.reason": "Ingresa un motivo; es obligatorio para prospectos perdidos o sin interés", "validation.callbackNote": "Describe el acuerdo con el cliente", "validation.callbackTime": "Selecciona la fecha acordada con el cliente", "validation.nextTime": "Selecciona la fecha del próximo contacto", "validation.dealer": "Selecciona un distribuidor válido de la lista", "validation.progressConflict": "Si la venta cerrada es “Sí”, el resultado no puede ser rechazo ni compra de otra marca", "validation.progressHierarchy": "El avance no es consistente: la visita requiere una cita de prueba y el cierre requiere una visita", "validation.progressRequired": "Selecciona: {field}", "validation.progressExtra": "Completa: {field}",
     "toast.submitted": "{id} enviado. La tarea actual se completó y se abrió el siguiente prospecto", "toast.watched": "Prospecto agregado a seguimiento", "toast.unwatched": "Prospecto eliminado de seguimiento", "toast.noteRequired": "Ingresa el contenido de la nota", "toast.noteAdded": "Nota de seguimiento agregada", "toast.noChanges": "No hay cambios en la información actual", "toast.userUpdated": "La información actual se actualizó; los datos originales se conservaron", "toast.orderUpdated": "Estado del pedido actualizado a: {status}"
   }
 };
@@ -467,6 +467,7 @@ function effectiveProgressValues(lead = activeLead()) {
 }
 
 function updateProgressFieldVisibility() {
+  const lead = activeLead();
   const values = effectiveProgressValues();
   let visibleCount = 0;
   const visibleByCode = {};
@@ -474,8 +475,10 @@ function updateProgressFieldVisibility() {
     const card = document.querySelector(`[data-progress-field="${field.code}"]`);
     if (!card) return;
     const resultMatches = !field.resultCodes?.length || field.resultCodes.includes(selectedResult);
+    const stateMatches = !field.stateCodes?.length || field.stateCodes.includes(leadStateCode(lead));
+    const taskMatches = !field.taskRuleIds?.length || field.taskRuleIds.includes(lead.task?.ruleId);
     const dependencyMatches = !field.dependsOn || (visibleByCode[field.dependsOn.field] && values[field.dependsOn.field] === field.dependsOn.value);
-    const visible = resultMatches && dependencyMatches;
+    const visible = resultMatches && stateMatches && taskMatches && dependencyMatches;
     visibleByCode[field.code] = visible;
     card.hidden = !visible;
     if (visible) visibleCount += 1;
@@ -483,8 +486,26 @@ function updateProgressFieldVisibility() {
       const keep = card.querySelector('input[value="KEEP"]');
       if (keep) keep.checked = true;
     }
+    const extra = card.querySelector(".progress-extra-input");
+    if (extra) {
+      const selected = card.querySelector(`input[name="progress_${field.code}"]:checked`);
+      extra.hidden = !visible || selected?.value !== field.inputWhen?.value;
+      if (extra.hidden) extra.querySelector("input").value = "";
+    }
   });
   $("progressUpdatePanel").hidden = visibleCount === 0;
+  updateProgressReasonRequirement();
+}
+
+function updateProgressReasonRequirement() {
+  const transition = selectedResult ? getTransition(activeLead(), selectedResult) : null;
+  const progressRequiresReason = configuredProgressFields().some((field) => {
+    const card = document.querySelector(`[data-progress-field="${field.code}"]`);
+    const selected = card?.querySelector(`input[name="progress_${field.code}"]:checked`);
+    return card && !card.hidden && selected && (field.reasonRequiredValues || []).includes(selected.value);
+  });
+  $("reasonRow").hidden = !(transition?.reasonRequired || progressRequiresReason);
+  fillText("reasonLabelText", progressRequiresReason ? t("progressUpdate.notDealReason") : t("follow.reason"));
 }
 
 function renderProgressUpdateControls(lead) {
@@ -512,6 +533,21 @@ function renderProgressUpdateControls(lead) {
       choices.appendChild(label);
     });
     card.append(heading, choices);
+    if (field.inputWhen) {
+      const extra = el("div", "progress-extra-input");
+      extra.hidden = true;
+      const inputId = `progress_extra_${field.inputWhen.code}`;
+      const label = el("label", "", field.inputWhen.name + (field.inputWhen.required ? " *" : ""));
+      label.htmlFor = inputId;
+      const input = el("input");
+      input.id = inputId;
+      input.type = field.inputWhen.type || "text";
+      if (input.type === "datetime-local") input.min = addDays(1);
+      input.dataset.progressExtra = field.inputWhen.code;
+      input.addEventListener("change", updateActionPreview);
+      extra.append(label, input);
+      card.appendChild(extra);
+    }
     grid.appendChild(card);
   });
   updateProgressFieldVisibility();
@@ -523,6 +559,55 @@ function collectProgressUpdates() {
     if (selected && selected.value !== "KEEP") updates[field.code] = selected.value;
     return updates;
   }, {});
+}
+
+function collectProgressExtraInputs() {
+  return configuredProgressFields().reduce((values, field) => {
+    if (!field.inputWhen) return values;
+    const input = document.querySelector(`[data-progress-extra="${field.inputWhen.code}"]`);
+    if (input?.value) values[field.inputWhen.code] = input.value;
+    return values;
+  }, {});
+}
+
+function taskRuleById(id) {
+  return configuredTaskRules.find((rule) => rule.id === id && rule.enabled !== false);
+}
+
+function taskDueFromRule(rule, extras = {}) {
+  if (!rule) return "";
+  if (["预约试驾时间", "预约试驾时间 -1天"].includes(rule.deadline)) {
+    const appointment = extras.trialAppointmentAt;
+    if (!appointment) return "";
+    const date = new Date(appointment);
+    if (rule.deadline.includes("-1天")) date.setDate(date.getDate() - 1);
+    return toInputValue(date);
+  }
+  return deadlineInputValue(rule.deadline);
+}
+
+function progressTaskPlans(progressUpdates, extras = {}) {
+  const ids = [];
+  configuredProgressFields().forEach((field) => {
+    const value = progressUpdates[field.code];
+    (field.taskRulesByValue?.[value] || []).forEach((id) => { if (!ids.includes(id)) ids.push(id); });
+  });
+  return ids.map(taskRuleById).filter(Boolean).map((rule) => ({
+    ruleId: rule.id,
+    group: rule.type,
+    trigger: rule.trigger,
+    deadline: rule.deadline,
+    due: taskDueFromRule(rule, extras)
+  }));
+}
+
+function submissionTaskPlans(lead, transition, projectedState, progressUpdates, extras = {}) {
+  if (configuredState(projectedState)?.terminal) return [];
+  const configuredPlans = progressTaskPlans(progressUpdates, extras);
+  if (configuredPlans.length) return configuredPlans;
+  if (lead.task?.ruleId === "RULE-TRIAL-BEFORE" && lead.scheduledTasks?.length) return lead.scheduledTasks.map((task) => ({ ...task }));
+  if (!transition || transition.noNextTask) return [];
+  return [{ ruleId: transition.flow?.taskRuleId || null, group: transition.task, trigger: transition.trigger, deadline: transition.deadline, due: transition.time }];
 }
 
 function isCompletedDeal(progressUpdates = collectProgressUpdates()) {
@@ -539,6 +624,7 @@ function projectedProgressState(lead, transition, progressUpdates = collectProgr
 
 function updateActionPreview() {
   const updates = collectProgressUpdates();
+  const extras = collectProgressExtraInputs();
   const entries = Object.entries(updates);
   fillText("previewTags", entries.length ? entries.map(([field, value]) => `${progressFieldLabels[field] || field}=${value === "YES" ? t("prospect.yes") : t("prospect.no")}`).join("、") : t("progressUpdate.unchanged"));
   if (!selectedResult) {
@@ -549,10 +635,12 @@ function updateActionPreview() {
   const transition = getTransition(activeLead(), selectedResult);
   if (!transition) return;
   const projectedState = projectedProgressState(activeLead(), transition, updates);
-  const noNextTask = transition.noNextTask || projectedState === "won";
-  $("nextTimeRow").hidden = noNextTask;
+  const taskPlans = submissionTaskPlans(activeLead(), transition, projectedState, updates, extras);
+  const usesAppointmentSchedule = taskPlans.some((task) => task.deadline?.startsWith("预约试驾时间"));
+  $("nextTimeRow").hidden = taskPlans.length === 0 || taskPlans.length > 1 || usesAppointmentSchedule;
+  if (taskPlans.length === 1 && taskPlans[0].due && !usesAppointmentSchedule) $("nextTimeDefault").value = taskPlans[0].due;
   fillText("previewState", stateLabel(projectedState));
-  fillText("previewTask", noNextTask ? t("follow.noTask") : transition.task + " · " + transition.deadline);
+  fillText("previewTask", taskPlans.length ? taskPlans.map((task) => `${task.group} · ${task.trigger} · ${task.deadline}`).join("；") : t("follow.noTask"));
 }
 
 function resetDynamicFields() {
@@ -613,12 +701,22 @@ function validateSubmission(transition) {
   if (!selectedResult) return t("validation.result");
   if (!transition) return "当前结果没有匹配到后台流转规则，请管理员检查配置";
   const progressUpdates = collectProgressUpdates();
+  const progressExtras = collectProgressExtraInputs();
   const progressValues = { ...(activeLead().prospectProgress || {}), ...progressUpdates };
   const projectedState = projectedProgressState(activeLead(), transition, progressUpdates);
+  for (const field of configuredProgressFields()) {
+    const card = document.querySelector(`[data-progress-field="${field.code}"]`);
+    if (!card || card.hidden) continue;
+    const selected = card.querySelector(`input[name="progress_${field.code}"]:checked`)?.value;
+    if (field.required && (!selected || (selected === "KEEP" && !activeLead().prospectProgress?.[field.code]))) return t("validation.progressRequired", { field: field.name });
+    if (field.inputWhen?.required && selected === field.inputWhen.value && !progressExtras[field.inputWhen.code]) return t("validation.progressExtra", { field: field.inputWhen.name });
+  }
   if (isCompletedDeal(progressUpdates) && ["clear_reject", "bought_other"].includes(selectedResult)) return t("validation.progressConflict");
   if ((progressValues.visitStatus === "YES" && progressValues.trialStatus !== "YES") || (progressValues.dealStatus === "YES" && progressValues.visitStatus !== "YES")) return t("validation.progressHierarchy");
   if (!$("reasonRow").hidden && !$("reasonInput").value.trim()) return t("validation.reason");
-  if (!transition.noNextTask && projectedState !== "won" && !$("nextTimeDefault").value) return t("validation.nextTime");
+  const taskPlans = submissionTaskPlans(activeLead(), transition, projectedState, progressUpdates, progressExtras);
+  const needsManualTaskTime = taskPlans.length === 1 && !taskPlans[0].due;
+  if (needsManualTaskTime && !$("nextTimeDefault").value) return t("validation.nextTime");
   return "";
 }
 
@@ -638,8 +736,10 @@ function submitFollowUp() {
   const reason = $("reasonInput").value.trim();
   const nextTime = $("nextTimeDefault").value;
   const progressUpdateMap = collectProgressUpdates();
+  const progressExtraMap = collectProgressExtraInputs();
   const newStateCode = projectedProgressState(lead, transition, progressUpdateMap);
-  const noNextTask = transition.noNextTask || newStateCode === "won";
+  const taskPlans = submissionTaskPlans(lead, transition, newStateCode, progressUpdateMap, progressExtraMap).map((plan) => ({ ...plan, due: plan.due || nextTime }));
+  const noNextTask = taskPlans.length === 0;
   const oldState = stateLabel(leadStateCode(lead));
   const newState = stateLabel(newStateCode);
   const newOperations = [
@@ -656,8 +756,12 @@ function submitFollowUp() {
     progressUpdates.forEach(([field, value]) => { lead.prospectProgress[field] = value; });
     newOperations.push(["刚刚", "潜客推进信息更新", progressUpdates.map(([field, value]) => `${progressFieldLabels[field] || field}：${value === "YES" ? "是" : "否"}`).join("；")]);
   }
-  if (!noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
-  else newOperations.push(["刚刚", "任务结束", isCompletedDeal(progressUpdateMap) ? "客户已标记成交，不再生成后续联系任务" : "后台流转规则未配置后续任务"]);
+  if (Object.keys(progressExtraMap).length) {
+    lead.prospectExtra = { ...(lead.prospectExtra || {}), ...progressExtraMap };
+    if (progressExtraMap.trialAppointmentAt) newOperations.push(["刚刚", "预约试驾时间", readableTime(progressExtraMap.trialAppointmentAt)]);
+  }
+  taskPlans.forEach((plan) => newOperations.push(["刚刚", "任务生成", `生成${plan.group}；触发原因：${plan.trigger}；截止时间：${readableTime(plan.due)}`]));
+  if (noNextTask) newOperations.push(["刚刚", "任务结束", newStateCode === "won" ? "客户已成交，线索进入成交终态" : newStateCode === "visited_not_deal" ? "客户未成交，原因已记录，线索进入未成交终态" : "后台流转规则未配置后续任务"]);
   lead.operations = newOperations.concat(lead.operations);
   lead.stateCode = newStateCode;
   lead.leadQuality = nextQuality;
@@ -666,8 +770,11 @@ function submitFollowUp() {
   if (noNextTask) {
     lead.lostReason = reason || lead.lostReason;
     lead.task = null;
+    lead.scheduledTasks = [];
   } else {
-    lead.task = { id: nextTaskId(), group: transition.task, trigger: transition.trigger, due: readableTime(nextTime) };
+    const generatedTasks = taskPlans.map((plan) => ({ id: nextTaskId(), ruleId: plan.ruleId, group: plan.group, trigger: plan.trigger, due: readableTime(plan.due) }));
+    lead.task = generatedTasks[0];
+    lead.scheduledTasks = generatedTasks.slice(1);
   }
   const completedLeadId = lead.id;
   moveToNextActiveLead();

@@ -113,13 +113,13 @@ window.CRM_DEMO_DATA = {
       leadType: "金融", brand: "KIA", series: "Sportage", model: "EX Pack",
       dealer: "KIA Lindavista", address: "Av. Insurgentes Norte 1800", region: "Ciudad de México",
       price: "$689,900 MXN", rate: "13.90%", term: "48期", createdAt: "2026-08-23 11:12",
-      state: "following", stateCode: "visited_not_deal", leadQuality: "VALID", leadTags: [], prospectProgress: { trialStatus: "NO", visitStatus: "YES", dealStatus: "NO" }, unreachableCount: 0,
+      state: "following", stateCode: "trial_booked", leadQuality: "VALID", leadTags: [], prospectProgress: { trialStatus: "YES", visitStatus: null, dealStatus: null }, prospectExtra: { trialAppointmentAt: "2026-08-25T15:00" }, unreachableCount: 0,
       orderStatusCode: "WAITING_DISBURSEMENT", orderStatusUpdatedAt: "昨天 15:20", orderStatusUpdatedBy: "sales 001 Deng Yao",
       orderStatusHistory: [
         { from: "CONTRACT_SIGNED", to: "WAITING_DISBURSEMENT", time: "昨天 15:20", operator: "sales 001 Deng Yao" },
         { from: "CREDIT_REVIEW", to: "CONTRACT_SIGNED", time: "08-24 11:30", operator: "sales 001 Deng Yao" }
       ],
-      task: { id: "TASK-260825-015", group: "普通回访", trigger: "客户已沟通有意向", due: "今天 15:00" },
+      task: { id: "TASK-260825-015", ruleId: "RULE-TRIAL-DAY", group: "普通回访", trigger: "试驾当天确认客户是否到店", due: "今天 15:00" },
       lastContact: "首付预算约20%，请下午把48期和60期月供都发给我。",
       operations: [
         ["昨天 14:12", "跟进提交", "跟进结果：已沟通-有意向；状态保持跟进中·已联系"],
