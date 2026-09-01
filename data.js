@@ -44,7 +44,7 @@ window.CRM_DEMO_DATA = {
           { field: "地区", before: "Estado de México", after: "Ciudad de México" }
         ] }
       ],
-      state: "pending", stateCode: "pending", leadTags: [], unreachableCount: 0,
+      state: "pending", stateCode: "not_followed", leadTags: [], unreachableCount: 0,
       orderStatusCode: "UNMARKED", orderStatusHistory: [],
       task: { id: "TASK-260825-001", group: "首次联系", trigger: "新线索已分配", due: "今天 10:00" },
       lastContact: "尚无联系记录",
@@ -63,13 +63,13 @@ window.CRM_DEMO_DATA = {
       leadType: "金融", brand: "MAZDA", series: "CX-30", model: "i Grand Touring",
       dealer: "Mazda Universidad", address: "Av. Universidad 1000", region: "Ciudad de México",
       price: "$532,900 MXN", rate: "15.50%", term: "60期", createdAt: "2026-08-25 08:42",
-      state: "following", stateCode: "contacted", leadTags: [], unreachableCount: 1,
+      state: "following", stateCode: "not_followed", leadTags: [], unreachableCount: 1,
       orderStatusCode: "CREDIT_REVIEW", orderStatusUpdatedAt: "今天 10:25", orderStatusUpdatedBy: "sales 001 Deng Yao",
       orderStatusHistory: [{ from: "UNMARKED", to: "CREDIT_REVIEW", time: "今天 10:25", operator: "sales 001 Deng Yao" }],
       task: { id: "TASK-260825-008", group: "普通回访", trigger: "首次联系未接通", due: "今天 12:20" },
       lastContact: "拨打用户电话，无人接听。",
       operations: [
-        ["10:20", "跟进提交", "跟进结果：未接通（第1次）；线索进入跟进中·已联系；未接通次数更新为1"],
+        ["10:20", "跟进提交", "跟进结果：未接通（第1次）；主状态保持未跟进；未接通次数更新为1"],
         ["10:20", "任务完成", "首次联系任务已完成"],
         ["10:20", "任务生成", "生成普通回访任务；触发原因：首次联系未接通；截止时间：今天12:20"],
         ["08:45", "线索分配", "线索分配给 sales 001 Deng Yao"],
@@ -86,7 +86,7 @@ window.CRM_DEMO_DATA = {
       leadType: "试驾", brand: "FORD", series: "Explorer", model: "Platinum",
       dealer: "Ford Dinastía", address: "Calz. de Tlalpan 2750", region: "Ciudad de México",
       price: "$1,439,000 MXN", rate: "—", term: "—", createdAt: "2026-08-24 16:05",
-      state: "following", stateCode: "interested", leadTags: ["valid_lead"], unreachableCount: 0,
+      state: "following", stateCode: "followed_prospect", leadTags: [], unreachableCount: 0,
       orderStatusCode: "CONTRACT_SIGNED", orderStatusUpdatedAt: "昨天 17:05", orderStatusUpdatedBy: "sales 001 Deng Yao",
       orderStatusHistory: [
         { from: "CREDIT_REVIEW", to: "CONTRACT_SIGNED", time: "昨天 17:05", operator: "sales 001 Deng Yao" },
@@ -113,7 +113,7 @@ window.CRM_DEMO_DATA = {
       leadType: "金融", brand: "KIA", series: "Sportage", model: "EX Pack",
       dealer: "KIA Lindavista", address: "Av. Insurgentes Norte 1800", region: "Ciudad de México",
       price: "$689,900 MXN", rate: "13.90%", term: "48期", createdAt: "2026-08-23 11:12",
-      state: "following", stateCode: "prospect", leadTags: ["valid_lead"], prospectProgress: { trialStatus: "NO", visitStatus: "YES", dealStatus: "NO" }, unreachableCount: 0,
+      state: "following", stateCode: "followed_prospect", leadTags: [], prospectProgress: { trialStatus: "NO", visitStatus: "YES", dealStatus: "NO" }, unreachableCount: 0,
       orderStatusCode: "WAITING_DISBURSEMENT", orderStatusUpdatedAt: "昨天 15:20", orderStatusUpdatedBy: "sales 001 Deng Yao",
       orderStatusHistory: [
         { from: "CONTRACT_SIGNED", to: "WAITING_DISBURSEMENT", time: "昨天 15:20", operator: "sales 001 Deng Yao" },
@@ -140,22 +140,19 @@ window.CRM_DEMO_DATA = {
       leadType: "试驾", brand: "TOYOTA", series: "Corolla Cross", model: "HEV",
       dealer: "Toyota Satélite", address: "Blvd. Manuel Ávila Camacho 2250", region: "Estado de México",
       price: "$599,900 MXN", rate: "—", term: "—", createdAt: "2026-07-26 13:40",
-      state: "testdrive", stateCode: "not_followed", leadTags: [], unreachableCount: 0,
+      state: "testdrive", stateCode: "overdue", leadTags: [], unreachableCount: 0,
       orderStatusCode: "UNMARKED", orderStatusHistory: [],
       task: { id: "TASK-260825-021", group: "首次联系", trigger: "超过72小时未完成首次联系", due: "今天 11:00" },
-      lastContact: "先安排试驾，购车时间可能在下个月。",
+      lastContact: "尚未完成首次有效跟进。",
       operations: [
-        ["07-26 14:08", "跟进提交", "跟进结果：试驾；线索转为暂存·试驾"],
-        ["07-26 14:08", "任务生成", "生成30天后普通回访任务"],
-        ["07-26 13:57", "跟进提交", "跟进结果：已沟通-有意向；用户暂未确定购车时间"],
+        ["今天 09:00", "超时检测", "线索下发超过72小时仍未完成首次有效跟进，主状态更新为过期未跟进"],
+        ["今天 09:00", "任务更新", "首次联系任务标记为已逾期并继续保留给原销售处理"],
         ["07-26 13:43", "线索分配", "线索分配给 sales 001 Deng Yao"],
         ["07-26 13:40", "线索创建", "用户扫描车展二维码提交试驾信息"]
       ],
       notes: [
-        ["07-26 14:09", "先安排试驾，购车时间可能在下个月。"],
-        ["07-26 14:00", "希望试驾混动版本，周六上午时间比较方便。"],
-        ["07-26 13:52", "目前对 Corolla Cross 和 RAV4 都有兴趣。"],
-        ["07-26 13:45", "用户住在 Satélite 附近，可到店距离较近。"]
+        ["07-26 13:45", "用户在留资表单中填写：希望试驾混动版本，周六上午时间比较方便。"],
+        ["07-26 13:44", "表单浏览记录显示用户同时查看了 Corolla Cross 和 RAV4。"]
       ]
     },
     {
@@ -163,14 +160,14 @@ window.CRM_DEMO_DATA = {
       leadType: "全款", brand: "HONDA", series: "CR-V", model: "Touring",
       dealer: "Honda Perisur", address: "Periférico Sur 3720", region: "Ciudad de México",
       price: "$839,900 MXN", rate: "—", term: "—", createdAt: "2026-07-25 12:10",
-      state: "cash", stateCode: "prospect_lost", leadTags: ["valid_lead"], unreachableCount: 1,
+      state: "cash", stateCode: "followed_prospect", leadTags: [], unreachableCount: 1,
       orderStatusCode: "UNMARKED", orderStatusHistory: [],
-      task: { id: "TASK-260825-025", group: "普通回访", trigger: "暂存线索到期", due: "今天 14:00" },
+      task: { id: "TASK-260825-025", group: "普通回访", trigger: "客户有意向，继续确认购车时间", due: "今天 14:00" },
       lastContact: "不考虑贷款，等旧车出售后再决定。",
       operations: [
-        ["07-25 12:48", "跟进提交", "跟进结果：已沟通-无意向；销售选择去向：确认全款"],
-        ["07-25 12:48", "状态流转", "线索转为暂存·确认全款"],
-        ["07-25 12:48", "任务生成", "生成30天后普通回访任务"],
+        ["07-25 12:48", "跟进提交", "跟进结果：有意向；客户明确表示出售旧车后考虑全款购车"],
+        ["07-25 12:48", "状态流转", "未跟进 · 正常等待跟进 → 已跟进 · 有意向 · 潜客"],
+        ["07-25 12:48", "任务生成", "生成普通回访任务，继续确认旧车出售和购车时间"],
         ["07-25 12:20", "跟进提交", "跟进结果：未接通（第1次）"],
         ["07-25 12:12", "线索分配", "线索分配给 sales 001 Deng Yao"]
       ],
@@ -186,14 +183,14 @@ window.CRM_DEMO_DATA = {
       leadType: "金融", brand: "NISSAN", series: "Kicks", model: "Exclusive CVT",
       dealer: "Nissan Polanco", address: "Lago Alberto 320", region: "Ciudad de México",
       price: "$548,900 MXN", rate: "16.20%", term: "60期", createdAt: "2026-07-24 18:22",
-      state: "noIntent", stateCode: "prospect", leadTags: ["valid_lead"], prospectProgress: { trialStatus: "NO", visitStatus: "NO", dealStatus: "NO" }, unreachableCount: 1,
+      state: "noIntent", stateCode: "followed_prospect", leadTags: [], prospectProgress: { trialStatus: "NO", visitStatus: "NO", dealStatus: "NO" }, unreachableCount: 1,
       orderStatusCode: "UNMARKED", orderStatusHistory: [],
-      task: { id: "TASK-260825-029", group: "普通回访", trigger: "暂存线索到期", due: "今天 16:00" },
+      task: { id: "TASK-260825-029", group: "普通回访", trigger: "客户仍有购车需求，继续确认预算", due: "今天 16:00" },
       lastContact: "近期预算不足，先暂停购车，后面情况合适再联系。",
       operations: [
-        ["07-24 18:55", "跟进提交", "跟进结果：已沟通-无意向；原因：近期预算不足"],
-        ["07-24 18:55", "状态流转", "线索转为暂存·无意向购买"],
-        ["07-24 18:55", "任务生成", "生成30天后普通回访任务"],
+        ["07-24 18:55", "跟进提交", "跟进结果：有意向；客户仍计划购车，但需要重新确认预算"],
+        ["07-24 18:55", "状态流转", "未跟进 · 正常等待跟进 → 已跟进 · 有意向 · 潜客"],
+        ["07-24 18:55", "任务生成", "生成普通回访任务，继续确认预算和购车时间"],
         ["07-24 18:31", "跟进提交", "跟进结果：未接通（第1次）"],
         ["07-24 18:24", "线索分配", "线索分配给 sales 001 Deng Yao"]
       ],
@@ -209,7 +206,7 @@ window.CRM_DEMO_DATA = {
       leadType: "金融", brand: "CHEVROLET", series: "Tracker", model: "Premier",
       dealer: "Chevrolet Pedregal", address: "Periférico Sur 4091", region: "Ciudad de México",
       price: "$566,400 MXN", rate: "15.80%", term: "60期", createdAt: "2026-08-24 09:14",
-      state: "following", stateCode: "contacted", leadTags: [], unreachableCount: 2,
+      state: "following", stateCode: "not_followed", leadTags: [], unreachableCount: 2,
       orderStatusCode: "DISBURSEMENT_SUCCESS", orderStatusUpdatedAt: "今天 09:40", orderStatusUpdatedBy: "sales 001 Deng Yao",
       orderStatusHistory: [
         { from: "WAITING_DISBURSEMENT", to: "DISBURSEMENT_SUCCESS", time: "今天 09:40", operator: "sales 001 Deng Yao" },
@@ -220,7 +217,7 @@ window.CRM_DEMO_DATA = {
       operations: [
         ["昨天 17:42", "跟进提交", "跟进结果：未接通（第2次）；累计未接通次数更新为2"],
         ["昨天 17:42", "任务生成", "生成普通回访任务；触发原因：累计第2次未接通；截止时间：今天10:00"],
-        ["昨天 11:18", "跟进提交", "跟进结果：未接通（第1次）；线索进入跟进中·已联系"],
+        ["昨天 11:18", "跟进提交", "跟进结果：未接通（第1次）；主状态保持未跟进"],
         ["昨天 11:18", "任务生成", "生成普通回访任务；触发原因：首次联系未接通；截止时间：昨天13:18"],
         ["昨天 09:16", "线索分配", "线索分配给 sales 001 Deng Yao"]
       ],

@@ -32,7 +32,7 @@
             <div class="info-section"><h3 data-i18n="dealer.finance">经销商与金融信息</h3><dl class="info-grid"><div><dt data-i18n="dealer.name">经销商</dt><dd id="dealer">Changan Polanco</dd></div><div><dt data-i18n="field.region">地区</dt><dd id="region">Ciudad de México</dd></div><div class="wide"><dt data-i18n="field.address">地址</dt><dd id="address">Av. Ejército Nacional 843</dd></div><div><dt data-i18n="finance.price">车价格</dt><dd id="price">$589,900 MXN</dd></div><div><dt data-i18n="finance.rate">年利率</dt><dd id="rate">14.99%</dd></div><div><dt data-i18n="finance.term">贷款期数</dt><dd id="term">72期</dd></div></dl></div>
           </div>
           <div class="prospect-progress-row" id="prospectProgressRow" hidden>
-            <div class="prospect-progress-heading"><strong data-i18n="prospect.title">潜客推进信息</strong><span data-i18n="prospect.description">标准化字段，用于筛选和统计</span></div>
+            <div class="prospect-progress-heading"><strong data-i18n="prospect.title">客户推进信息</strong><span data-i18n="prospect.description">三个字段独立累计，用于筛选和统计</span></div>
             <dl class="prospect-progress-grid"><div><dt data-i18n="prospect.trial">是否试驾</dt><dd id="trialStatus">未标记</dd></div><div><dt data-i18n="prospect.visit">是否到店</dt><dd id="visitStatus">未标记</dd></div><div><dt data-i18n="prospect.deal">是否成交</dt><dd id="dealStatus">未标记</dd></div></dl>
           </div>
           <div class="order-status-row"><div><span class="order-status-label" data-i18n="order.label">订单状态</span><strong class="order-status-badge" id="orderStatusBadge">未标记</strong><small id="orderStatusMeta">尚未人工标记</small></div><button class="button secondary compact" id="orderStatusButton" type="button" data-i18n="order.update">更新状态</button></div>
@@ -40,14 +40,14 @@
         <section class="panel follow-panel" aria-labelledby="followTitle">
           <div class="panel-heading follow-heading"><div><h2 id="followTitle" data-i18n="follow.title">本次跟进</h2><p data-i18n="follow.description">当前任务决定跟进内容，业务状态随跟进结果流转</p></div><span class="task-group-label" id="taskGroupLabel">首次联系</span></div>
           <label class="field-label" for="scenarioSelect" data-i18n="follow.scenario">切换普通线索演示场景</label><select id="scenarioSelect" class="select-control"></select>
-          <div class="current-state"><span data-i18n="follow.currentState">当前状态</span><strong id="currentState">待跟进 · 待跟进</strong><span class="lead-quality-display" id="leadQualityDisplay">暂无线索标签</span><span class="attempt-count" id="attemptCount">未接通 0 次</span></div>
+          <div class="current-state"><span data-i18n="follow.currentState">当前状态</span><strong id="currentState">未跟进 · 正常等待跟进</strong><span class="attempt-count" id="attemptCount">未接通 0 次</span></div>
           <fieldset class="result-fieldset"><legend><span data-i18n="follow.result">跟进结果</span> <span>*</span></legend><div class="result-list" id="resultList"></div></fieldset>
           <div class="dynamic-fields" id="dynamicFields">
             <div class="field-row" id="reasonRow" hidden><label for="reasonInput"><span data-i18n="follow.reason">原因</span> <span>*</span></label><input id="reasonInput" type="text" placeholder="请输入具体原因" data-i18n-placeholder="follow.reasonPlaceholder"></div>
             <div class="two-field-row" id="callbackRow" hidden><div><label for="callbackNote"><span data-i18n="follow.callbackNote">用户约定说明</span> <span>*</span></label><input id="callbackNote" type="text" placeholder="例如：下班后方便接听" data-i18n-placeholder="follow.callbackPlaceholder"></div><div><label for="nextTime"><span data-i18n="follow.nextTime">下一次联系时间</span> <span>*</span></label><input id="nextTime" type="datetime-local"></div></div>
             <div class="field-row" id="nextTimeRow"><label for="nextTimeDefault"><span data-i18n="follow.nextTime">下一次联系时间</span> <span>*</span></label><input id="nextTimeDefault" type="datetime-local"><small id="timeHint" data-i18n="follow.timeHint">系统已按规则给出默认值，销售可以调整。</small></div>
           </div>
-          <div class="execution-preview" id="executionPreview"><div><span data-i18n="follow.afterState">提交后状态</span><strong id="previewState">待跟进 · 待跟进</strong></div><div><span>线索标签</span><strong id="previewTags">保持当前标签</strong></div><div><span data-i18n="follow.nextTask">下一任务</span><strong id="previewTask">等待选择跟进结果</strong></div></div>
+          <div class="execution-preview" id="executionPreview"><div><span data-i18n="follow.afterState">提交后状态</span><strong id="previewState">未跟进 · 正常等待跟进</strong></div><div><span>客户推进字段</span><strong id="previewTags">保持当前进度</strong></div><div><span data-i18n="follow.nextTask">下一任务</span><strong id="previewTask">等待选择跟进结果</strong></div></div>
           <button class="button primary full" id="submitButton" type="button"><span data-i18n="action.submitNext">提交并进入下一条</span> →</button>
         </section>
       </div>
@@ -110,6 +110,6 @@
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260901-2"></script><script src="data.js?v=20260901-1"></script><script src="app.js?v=20260901-2"></script>
+  <script src="admin-data.js?v=20260901-3"></script><script src="data.js?v=20260901-3"></script><script src="app.js?v=20260901-3"></script>
 </body>
 </html>

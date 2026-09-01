@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v6";
+const storageKey = "baic_admin_demo_config_v7";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -22,7 +22,8 @@ const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": 
 const roleLabels = { tenant_admin: "北汽管理员", sales: "北汽销售" };
 const permissionOptions = ["查看北汽全部线索", "查看本人负责线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"];
 const viewNames = { dashboard: "后台总览", leads: "线索数据", accounts: "账号与角色", tasks: "任务配置", nodes: "线索流转配置" };
-const groupLabels = { initial: "待跟进", processing: "跟进中", valid: "有效线索", invalid: "无效线索", dormant: "暂存", lost: "流失", won: "成交" };
+const groupLabels = { entry: "系统入口", not_followed: "未跟进", followed: "已跟进", invalid: "无效线索", overdue: "过期未跟进" };
+const mainStatusGroups = Object.fromEntries(Object.entries(groupLabels).map(([group, label]) => [label, group]));
 const categoryLabels = { contact: "联系", unreachable: "未接通", callback: "约定回访", dormant: "暂存", lost: "终止" };
 const taskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
 
@@ -47,15 +48,15 @@ function openView(view) {
   ({ leads: renderLeads, accounts: renderAccounts, tasks: renderTaskRules, nodes: renderTransitions })[view]?.();
 }
 
-function statusClass(status) { return ["战败", "流失"].includes(status) ? "lost" : status === "成交" ? "won" : ""; }
+function statusClass(status) { return status === "无效线索" ? "lost" : status === "过期未跟进" ? "dormant" : status === "已跟进" ? "won" : ""; }
 function leadRow(lead) {
   return `<tr><td><strong>${esc(lead.id)}</strong></td><td class="lead-person"><strong>${esc(lead.name)}</strong><small>${esc(lead.phone)}</small></td><td>${esc(lead.source)}</td><td>BAIC ${esc(lead.series)} ${esc(lead.model)}</td><td><span class="table-status ${statusClass(lead.status)}">${esc(lead.status)} · ${esc(lead.subStatus)}</span></td><td>${esc(lead.assignee)}</td><td><span class="task-state ${lead.taskStatus === "处理中" ? "processing" : ""}">${esc(lead.task)} · ${esc(lead.taskStatus)}</span></td><td>${esc(lead.createdAt)}</td></tr>`;
 }
 function renderDashboard() {
   const activeTasks = state.leads.filter((lead) => ["待处理", "处理中"].includes(lead.taskStatus)).length;
-  const metrics = [["北汽线索总数", state.leads.length, "当前租户全部品牌线索", "emphasis"], ["待跟进", state.leads.filter((lead) => lead.status === "待跟进").length, "等待销售首次联系", ""], ["跟进中", state.leads.filter((lead) => lead.status === "跟进中").length, "已进入联系节奏", ""], ["有效销售任务", activeTasks, "待处理 + 处理中", ""]];
+  const metrics = [["北汽线索总数", state.leads.length, "当前租户全部品牌线索", "emphasis"], ["未跟进", state.leads.filter((lead) => lead.status === "未跟进").length, "尚未完成有效联系", ""], ["已跟进", state.leads.filter((lead) => lead.status === "已跟进").length, "已获得明确客户反馈", ""], ["有效销售任务", activeTasks, "待处理 + 处理中", ""]];
   $("metricGrid").innerHTML = metrics.map(([label, value, note, cls]) => `<article class="metric-card ${cls}"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
-  const stages = ["待跟进", "跟进中", "流失", "成交"].map((name) => [name, state.leads.filter((lead) => lead.status === name).length]);
+  const stages = ["未跟进", "已跟进", "无效线索", "过期未跟进"].map((name) => [name, state.leads.filter((lead) => lead.status === name).length]);
   const max = Math.max(...stages.map((item) => item[1]), 1);
   $("stageBars").innerHTML = stages.map(([name, count]) => `<div class="stage-row"><span>${name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(5, count / max * 100)}%"></div></div><strong>${count}</strong></div>`).join("");
   $("taskSummary").innerHTML = ["待处理", "处理中", "已逾期", "已完成", "已结束"].map((name) => `<div class="summary-cell"><span>${name}</span><strong>${state.leads.filter((lead) => lead.taskStatus === name).length}</strong></div>`).join("");
@@ -92,11 +93,12 @@ function renderTransitionSummary() {
   const salesResults = config.results.filter((item) => item.actor !== "system");
   const systemEvents = config.results.filter((item) => item.actor === "system");
   const enabledResults = salesResults.filter((item) => item.enabled !== false);
-  const values = [["状态节点", config.states.length, `${config.states.filter((item) => item.terminal).length} 个终态`], ["线索标签", (config.leadTags || []).length, "不参与状态流转"], ["销售跟进结果", enabledResults.length, `${salesResults.length} 个已配置 · ${systemEvents.length} 个系统事件`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
+  const mainStatuses = new Set(config.states.filter((item) => item.group !== "entry").map((item) => item.businessStage));
+  const values = [["主状态", mainStatuses.size, `${config.states.length - 1} 个业务子状态`], ["推进字段", (config.progressFields || []).length, "试驾 / 到店 / 成交"], ["销售跟进结果", enabledResults.length, `${salesResults.length} 个已配置 · ${systemEvents.length} 个系统事件`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
   $("transitionSummary").innerHTML = values.map(([label, value, note]) => `<article><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
 }
 function renderStateTree() {
-  $("leadTagList").innerHTML = (state.transitionConfig.leadTags || []).map((tag) => `<span class="lead-quality-tag" style="--tag-color:${tag.color}"><i></i>${esc(tag.name)}<small>${esc(tag.code)}</small></span>`).join("");
+  $("leadTagList").innerHTML = (state.transitionConfig.progressFields || []).map((field) => `<span class="lead-quality-tag" style="--tag-color:#2fcf9f"><i></i>${esc(field.name)}<small>是 / 否</small></span>`).join("");
   const levels = [...new Set(state.transitionConfig.states.map((item) => item.level))].sort((a, b) => a - b);
   $("stateTree").style.gridTemplateColumns = `repeat(${levels.length}, minmax(180px, 1fr))`;
   $("stateTree").innerHTML = levels.map((level) => {
@@ -105,7 +107,7 @@ function renderStateTree() {
   }).join("");
 }
 function renderStateRows() {
-  $("stateRows").innerHTML = state.transitionConfig.states.map((item) => `<tr><td><code>${esc(item.code)}</code></td><td><span class="state-name-cell"><i style="background:${item.color}"></i><strong>${esc(item.name)}</strong></span></td><td><span class="group-chip ${item.group}">${esc(item.businessStage || groupLabels[item.group] || item.group)}</span></td><td>${esc(stateName(item.parent))}</td><td>${item.level}</td><td><span class="attribute-tags">${item.terminal ? "<em>终态</em>" : ""}${item.dormant ? "<em>休眠</em>" : ""}${!item.terminal && !item.dormant ? "<em>普通</em>" : ""}</span></td><td><div class="row-actions"><button data-edit-state="${esc(item.code)}" type="button">编辑</button><button class="danger-text" data-delete-state="${esc(item.code)}" type="button">删除</button></div></td></tr>`).join("");
+  $("stateRows").innerHTML = state.transitionConfig.states.map((item) => `<tr><td><span class="group-chip ${item.group}">${esc(item.businessStage || groupLabels[item.group] || item.group)}</span></td><td><span class="state-name-cell"><i style="background:${item.color}"></i><strong>${esc(item.name)}</strong></span></td><td><code>${esc(item.code)}</code></td><td><span class="attribute-tags">${item.group === "entry" ? "<em>系统入口</em>" : item.terminal ? "<em>终态</em>" : "<em>可继续跟进</em>"}</span></td><td>${esc(stateName(item.parent))}</td><td><div class="row-actions"><button data-edit-state="${esc(item.code)}" type="button">编辑</button><button class="danger-text" data-delete-state="${esc(item.code)}" type="button">删除</button></div></td></tr>`).join("");
 }
 function renderResultRows() {
   const salesResults = state.transitionConfig.results
@@ -138,14 +140,14 @@ function renderStrategyRows() {
 function renderFlowBoard() {
   const config = state.transitionConfig;
   const levels = [...new Set(config.states.map((item) => item.level))].sort((a, b) => a - b);
-  $("flowLegend").innerHTML = `<span><i class="legend-dot initial"></i>待跟进</span><span><i class="legend-dot processing"></i>跟进中</span><span><i class="legend-dot lost"></i>流失</span><span><i class="legend-dot won"></i>成交</span><strong>${state.transitionConfig.states.length} 个节点 · ${state.transitionConfig.flows.length} 条规则</strong>`;
+  $("flowLegend").innerHTML = `<span><i class="legend-dot not-followed"></i>未跟进</span><span><i class="legend-dot followed"></i>已跟进</span><span><i class="legend-dot invalid"></i>无效线索</span><span><i class="legend-dot overdue"></i>过期未跟进</span><strong>4 个主状态 · ${state.transitionConfig.flows.length} 条规则</strong>`;
   const nodeWidth = 172;
   const nodeHeight = 58;
   const columnGap = 265;
   const rowStep = 62;
   const paddingX = 46;
   const paddingY = 38;
-  const baicRows = { issued: 4, pending: 2.6, not_followed: 5.4, contacted: 4, interested: 0.5, prospect_lost: 2.8, no_intent: 5, unreach_limit: 7.2, wrong_number: 9.4, prospect: 0.5, clear_reject: 3.3, bought_other: 6.2, won: 0.5 };
+  const baicRows = { issued: 4, not_followed: 4, overdue: 0.2, followed_prospect: 2.1, followed_lost_reject: 4.1, followed_lost_other: 6.1, invalid_unreachable: 8.1, invalid_number: 10.1 };
   const positions = {};
   levels.forEach((level) => {
     const entries = config.states.filter((item) => item.level === level);
@@ -229,11 +231,7 @@ function openTransitionModal(mode, key = null) {
   if (mode === "state") {
     const item = key ? stateByCode(key) : null;
     const parents = config.states.filter((entry) => entry.code !== key).map((entry) => `<option value="${esc(entry.code)}" ${item?.parent === entry.code ? "selected" : ""}>${esc(entry.name)}（${esc(entry.code)}）</option>`).join("");
-    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>状态编码 *</span><input id="modalStateCode" required value="${esc(item?.code || "")}" ${item ? "readonly" : ""} placeholder="例如：pending"></label><label><span>显示名称 *</span><input id="modalStateName" required value="${esc(item?.name || "")}"></label><label><span>状态分组 *</span><select id="modalStateGroup">${Object.entries(groupLabels).map(([value, label]) => `<option value="${value}" ${item?.group === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label><span>业务阶段</span><select id="modalStateBusinessStage"><option ${item?.businessStage === "待跟进" ? "selected" : ""}>待跟进</option><option ${item?.businessStage === "跟进中" ? "selected" : ""}>跟进中</option><option ${item?.businessStage === "流失" ? "selected" : ""}>流失</option></select></label><label><span>父状态</span><select id="modalStateParent"><option value="">无（根状态）</option>${parents}</select></label><label><span>层级 *</span><input id="modalStateLevel" type="number" min="1" max="8" value="${item?.level || 1}" required></label><label><span>标签颜色</span><input id="modalStateColor" type="color" value="${item?.color || "#345f9f"}"></label></div><div class="modal-checks"><label><input id="modalStateTerminal" type="checkbox" ${item?.terminal ? "checked" : ""}>终态（不再产生后续流转）</label><label><input id="modalStateDormant" type="checkbox" ${item?.dormant ? "checked" : ""}>休眠态（允许到期回捞）</label></div>`;
-    const wonStageOption = document.createElement("option");
-    wonStageOption.textContent = "成交";
-    wonStageOption.selected = item?.businessStage === "成交";
-    $("modalStateBusinessStage").appendChild(wonStageOption);
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>状态编码 *</span><input id="modalStateCode" required value="${esc(item?.code || "")}" ${item ? "readonly" : ""} placeholder="例如：not_followed"></label><label><span>子状态名称 *</span><input id="modalStateName" required value="${esc(item?.name || "")}" placeholder="例如：正常等待跟进"></label><label><span>主状态 *</span><select id="modalStateBusinessStage">${Object.values(groupLabels).map((label) => `<option ${item?.businessStage === label ? "selected" : ""}>${label}</option>`).join("")}</select></label><label><span>父节点</span><select id="modalStateParent"><option value="">无（根节点）</option>${parents}</select></label><label><span>流程层级 *</span><input id="modalStateLevel" type="number" min="1" max="8" value="${item?.level || 1}" required></label><label><span>节点颜色</span><input id="modalStateColor" type="color" value="${item?.color || "#345f9f"}"></label></div><div class="modal-checks"><label><input id="modalStateTerminal" type="checkbox" ${item?.terminal ? "checked" : ""}>终态（不再产生后续任务）</label></div>`;
   } else if (mode === "result") {
     const item = key ? resultByCode(key) : null;
     const nextOrder = Math.max(0, ...config.results.filter((result) => result.actor !== "system").map((result) => result.sortOrder || 0)) + 10;
@@ -244,10 +242,9 @@ function openTransitionModal(mode, key = null) {
     const salesResults = config.results.filter((item) => item.actor !== "system").sort((a, b) => a.sortOrder - b.sortOrder).map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}${item.enabled === false ? "（已停用）" : ""}</option>`).join("");
     const systemEvents = config.results.filter((item) => item.actor === "system").map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}</option>`).join("");
     const results = `<optgroup label="销售跟进结果">${salesResults}</optgroup><optgroup label="系统事件">${systemEvents}</optgroup>`;
-    const tagOptions = (config.leadTags || []).map((tag) => `<option value="${esc(tag.code)}" ${(flow?.setTags || []).includes(tag.code) ? "selected" : ""}>${esc(tag.name)}</option>`).join("");
     const progressValue = Object.entries(flow?.fieldUpdates || {})[0];
     const progressKey = progressValue ? `${progressValue[0]}:${progressValue[1]}` : "";
-    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前节点 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 / 系统事件 *</span><select id="modalFlowResult">${results}</select></label><label><span>流转至 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>同时更新线索标签</span><select id="modalFlowTag"><option value="">不更新标签</option>${tagOptions}</select></label><label><span>同时更新潜客字段</span><select id="modalFlowProgress"><option value="">不更新潜客字段</option><option value="trialStatus:YES" ${progressKey === "trialStatus:YES" ? "selected" : ""}>是否试驾：是</option><option value="trialStatus:NO" ${progressKey === "trialStatus:NO" ? "selected" : ""}>是否试驾：否</option><option value="visitStatus:YES" ${progressKey === "visitStatus:YES" ? "selected" : ""}>是否到店：是</option><option value="visitStatus:NO" ${progressKey === "visitStatus:NO" ? "selected" : ""}>是否到店：否</option><option value="dealStatus:YES" ${progressKey === "dealStatus:YES" ? "selected" : ""}>是否成交：是</option><option value="dealStatus:NO" ${progressKey === "dealStatus:NO" ? "selected" : ""}>是否成交：否</option></select></label><label><span>后续任务</span><select id="modalFlowTask"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option><option value="FIRST_CONTACT" ${flow?.task === "FIRST_CONTACT" ? "selected" : ""}>首次联系</option><option value="CALLBACK" ${flow?.task === "CALLBACK" ? "selected" : ""}>普通回访</option></select></label><label><span>默认截止时间</span><input id="modalFlowDeadline" value="${esc(flow?.deadline || "—")}"></label></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>该节点下原因必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前状态 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 / 系统事件 *</span><select id="modalFlowResult">${results}</select></label><label><span>转换到 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>更新客户推进字段</span><select id="modalFlowProgress"><option value="">不更新推进字段</option><option value="trialStatus:YES" ${progressKey === "trialStatus:YES" ? "selected" : ""}>是否试驾：是</option><option value="trialStatus:NO" ${progressKey === "trialStatus:NO" ? "selected" : ""}>是否试驾：否</option><option value="visitStatus:YES" ${progressKey === "visitStatus:YES" ? "selected" : ""}>是否到店：是</option><option value="visitStatus:NO" ${progressKey === "visitStatus:NO" ? "selected" : ""}>是否到店：否</option><option value="dealStatus:YES" ${progressKey === "dealStatus:YES" ? "selected" : ""}>是否成交：是</option><option value="dealStatus:NO" ${progressKey === "dealStatus:NO" ? "selected" : ""}>是否成交：否</option></select></label><label><span>后续任务</span><select id="modalFlowTask"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option><option value="FIRST_CONTACT" ${flow?.task === "FIRST_CONTACT" ? "selected" : ""}>首次联系</option><option value="CALLBACK" ${flow?.task === "CALLBACK" ? "selected" : ""}>普通回访</option></select></label><label><span>默认截止时间</span><input id="modalFlowDeadline" value="${esc(flow?.deadline || "—")}"></label></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>该状态下原因必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
   }
   $("transitionModal").hidden = false;
   document.body.classList.add("modal-open");
@@ -258,7 +255,8 @@ function saveStateFromModal() {
   const code = $("modalStateCode").value.trim(); const name = $("modalStateName").value.trim();
   if (!code || !name) return toast("请填写状态编码和显示名称");
   if (editingKey === null && stateByCode(code)) return toast("状态编码已存在");
-  const item = { code, name, group: $("modalStateGroup").value, businessStage: $("modalStateBusinessStage").value, parent: $("modalStateParent").value || null, level: Number($("modalStateLevel").value), terminal: $("modalStateTerminal").checked, dormant: $("modalStateDormant").checked, color: $("modalStateColor").value };
+  const businessStage = $("modalStateBusinessStage").value;
+  const item = { code, name, group: mainStatusGroups[businessStage], businessStage, parent: $("modalStateParent").value || null, level: Number($("modalStateLevel").value), terminal: $("modalStateTerminal").checked, dormant: false, color: $("modalStateColor").value };
   if (editingKey === null) state.transitionConfig.states.push(item); else Object.assign(stateByCode(editingKey), item);
   markDirty(); closeTransitionModal(); renderTransitions(); toast("节点已更新，保存后生效");
 }
@@ -287,7 +285,7 @@ function saveFlowFromModal() {
   const current = $("modalFlowCurrent").value;
   if (config.flows.some((item) => item.current === current && item.result === result && item.id !== Number(editingKey))) return toast("该节点与跟进结果的组合已存在");
   const progressParts = $("modalFlowProgress").value.split(":");
-  const flow = { id: editingKey === null ? Math.max(0, ...config.flows.map((item) => item.id)) + 1 : Number(editingKey), current, result, next: $("modalFlowNext").value, setTags: $("modalFlowTag").value ? [$("modalFlowTag").value] : [], fieldUpdates: progressParts.length === 2 ? { [progressParts[0]]: progressParts[1] } : {}, unreachable: $("modalFlowUnreachable").checked, reason: $("modalFlowReason").checked, task: $("modalFlowTask").value || null, deadline: $("modalFlowDeadline").value.trim() || "—", retry: $("modalFlowRetry").checked, reactivation: $("modalFlowReactivation").checked };
+  const flow = { id: editingKey === null ? Math.max(0, ...config.flows.map((item) => item.id)) + 1 : Number(editingKey), current, result, next: $("modalFlowNext").value, setTags: [], fieldUpdates: progressParts.length === 2 ? { [progressParts[0]]: progressParts[1] } : {}, unreachable: $("modalFlowUnreachable").checked, reason: $("modalFlowReason").checked, task: $("modalFlowTask").value || null, deadline: $("modalFlowDeadline").value.trim() || "—", retry: $("modalFlowRetry").checked, reactivation: $("modalFlowReactivation").checked };
   if (editingKey === null) config.flows.push(flow); else Object.assign(config.flows.find((item) => item.id === Number(editingKey)), flow);
   markDirty(); closeTransitionModal(); renderTransitions(); switchConfigTab("strategies"); toast("跟进策略已更新，保存后生效");
 }
