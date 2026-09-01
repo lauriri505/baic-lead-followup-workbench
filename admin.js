@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v10";
+const storageKey = "baic_admin_demo_config_v11";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -156,6 +156,17 @@ function renderProgressStateRows() {
     return `<tr><td><strong>${rule.priority}</strong></td><td>${esc(fieldLabels[rule.field] || rule.field)}</td><td>${esc(valueLabels[rule.value] || rule.value)}</td><td>${esc(requirements)}</td><td><span class="flow-direction">→</span><strong>${esc(stateName(rule.next))}</strong></td></tr>`;
   }).join("") || `<tr><td colspan="5" class="empty-cell">尚未配置客户推进节点判定规则</td></tr>`;
 }
+function renderProgressFieldRows() {
+  const fields = [...(state.transitionConfig.progressFields || [])].sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  const fieldLabels = Object.fromEntries(fields.map((item) => [item.code, item.name]));
+  const valueLabels = { YES: "是", NO: "否" };
+  $("progressFieldRows").innerHTML = fields.map((field) => {
+    const results = (field.resultCodes || []).map((code) => resultName(code)).join("、") || "全部跟进结果";
+    const condition = field.dependsOn ? `${fieldLabels[field.dependsOn.field] || field.dependsOn.field} = ${valueLabels[field.dependsOn.value] || field.dependsOn.value}` : "选择适用跟进结果后展示";
+    const values = (field.values || []).map((value) => valueLabels[value] || value).join(" / ");
+    return `<tr><td><strong>${field.sortOrder || "—"}</strong></td><td><strong>${esc(field.name)}</strong><small class="table-code">${esc(field.code)}</small></td><td>${esc(values)}</td><td>${esc(results)}</td><td>${esc(condition)}</td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="empty-cell">尚未配置工作台推进字段</td></tr>`;
+}
 function renderFlowBoard() {
   const config = state.transitionConfig;
   const diagram = config.journeyDiagram || { width: 1200, height: 700, nodes: [], edges: [] };
@@ -221,7 +232,7 @@ function showFlowDetail(code) {
   $("flowDetail").innerHTML = `<header><div><span class="detail-color" style="background:${item.color}"></span><strong>${esc(item.name)}</strong><code>${esc(item.code)}</code></div><small>${esc(item.businessStage || groupLabels[item.group] || item.group)} · 层级 ${item.level}${item.terminal ? " · 终态" : ""}</small></header><div class="flow-detail-grid"><section><h3>进入该节点 <span>${incoming.length}</span></h3><ul>${incoming.map((flow) => line(flow, true)).join("") || "<li class='no-rule'>无进入规则</li>"}</ul></section><section><h3>离开该节点 <span>${outgoing.length}</span></h3><ul>${outgoing.map((flow) => line(flow, false)).join("") || "<li class='no-rule'>无离开规则</li>"}</ul></section></div>`;
 }
 function renderTransitions() {
-  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderResultRows(); renderStrategyFilter(); renderStrategyRows(); renderProgressStateRows(); renderFlowBoard();
+  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderResultRows(); renderStrategyFilter(); renderStrategyRows(); renderProgressFieldRows(); renderProgressStateRows(); renderFlowBoard();
   $("transitionJson").textContent = JSON.stringify(state.transitionConfig, null, 2);
 }
 function switchConfigTab(tab) {
@@ -325,6 +336,8 @@ function deleteResult(code) {
 function validateTransitions() {
   const states = new Set(state.transitionConfig.states.map((item) => item.code)); const results = new Set(state.transitionConfig.results.map((item) => item.code)); const tags = new Set((state.transitionConfig.leadTags || []).map((item) => item.code)); const qualities = new Set((state.transitionConfig.qualityOptions || []).map((item) => item.code)); const taskRules = new Set(state.taskRules.map((item) => item.id)); const combinations = new Set(); const errors = [];
   state.transitionConfig.states.forEach((item) => { if (item.parent && !states.has(item.parent)) errors.push(`${item.name} 的父节点不存在`); });
+  const progressFields = new Set((state.transitionConfig.progressFields || []).map((item) => item.code));
+  (state.transitionConfig.progressFields || []).forEach((field) => { if (field.dependsOn && !progressFields.has(field.dependsOn.field)) errors.push(`推进字段 ${field.name} 的出现条件引用了不存在的字段`); (field.resultCodes || []).forEach((code) => { if (!results.has(code)) errors.push(`推进字段 ${field.name} 引用了不存在的跟进结果`); }); });
   state.transitionConfig.flows.forEach((flow) => { if (!states.has(flow.current) || !states.has(flow.next)) errors.push(`规则 ${flow.id} 引用了不存在的节点`); if (!results.has(flow.result)) errors.push(`规则 ${flow.id} 引用了不存在的跟进结果`); if (!qualities.has(flow.qualityUpdate)) errors.push(`规则 ${flow.id} 未配置有效性更新`); if (flow.task && !taskRules.has(flow.taskRuleId)) errors.push(`规则 ${flow.id} 未绑定有效的任务规则`); (flow.setTags || []).forEach((tag) => { if (!tags.has(tag)) errors.push(`规则 ${flow.id} 引用了不存在的线索标签`); }); const key = `${flow.current}:${flow.result}`; if (combinations.has(key)) errors.push(`${stateName(flow.current)} + ${resultName(flow.result)} 存在重复规则`); combinations.add(key); });
   return errors;
 }

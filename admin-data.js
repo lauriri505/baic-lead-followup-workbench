@@ -53,9 +53,9 @@ window.BAIC_ADMIN_DATA = {
     ],
     leadTags: [],
     progressFields: [
-      { code: "trialStatus", name: "是否预约试驾", values: ["YES", "NO"] },
-      { code: "visitStatus", name: "是否到店", values: ["YES", "NO"] },
-      { code: "dealStatus", name: "是否成交", values: ["YES", "NO"] }
+      { code: "trialStatus", name: "是否预约试驾", values: ["YES", "NO"], resultCodes: ["interested"], sortOrder: 10 },
+      { code: "visitStatus", name: "是否到店", values: ["YES", "NO"], resultCodes: ["interested"], dependsOn: { field: "trialStatus", value: "YES" }, sortOrder: 20 },
+      { code: "dealStatus", name: "是否成交", values: ["YES", "NO"], resultCodes: ["interested"], dependsOn: { field: "visitStatus", value: "YES" }, sortOrder: 30 }
     ],
     progressStateRules: [
       { priority: 60, field: "dealStatus", value: "YES", next: "won" },

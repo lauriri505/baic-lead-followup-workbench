@@ -101,6 +101,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .result-deadline{color:#8d98aa;font-size:9px;text-align:right}
 .result-empty{padding:16px;border:1px dashed #d5dce7;border-radius:6px;color:#7e899b;text-align:center;font-size:9px}
 .progress-update-panel{margin-top:15px;padding:11px;border:1px solid #dce3ed;border-radius:7px;background:#f7f9fc}
+.progress-update-panel[hidden],.progress-update-card[hidden]{display:none}
 .progress-update-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px}
 .progress-update-heading h3{font-size:10px}
 .progress-update-heading p{margin-top:2px;color:#8d98aa;font-size:8px}
