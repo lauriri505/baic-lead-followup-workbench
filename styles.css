@@ -64,6 +64,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .order-status-badge[data-status="CONTRACT_SIGNED"],.order-status-badge[data-status="WAITING_DISBURSEMENT"]{background:#eaf1fb;color:#355d91}
 .order-status-badge[data-status="DISBURSEMENT_SUCCESS"],.order-status-badge[data-status="VEHICLE_DELIVERED"]{background:#e9f5ef;color:#28735a}
 .order-status-row small{color:#98a2b3;font-size:8px}
+.prospect-progress-row{margin-top:16px;padding:12px 0;border-top:1px solid #e7ebf1;border-bottom:1px solid #e7ebf1}
+.prospect-progress-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}.prospect-progress-heading strong{font-size:10px}.prospect-progress-heading span{color:#98a2b3;font-size:8px}
+.prospect-progress-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0}.prospect-progress-grid div{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:6px;background:#f5f7fa}.prospect-progress-grid dt{color:#7f8a9b;font-size:8px}.prospect-progress-grid dd{margin:0;color:#263249;font-size:9px;font-weight:800}.prospect-progress-grid dd[data-value="YES"]{color:#16825f}.prospect-progress-grid dd[data-value="NO"]{color:#a96012}
 .button.compact{min-height:28px;padding:0 10px;font-size:9px;white-space:nowrap}
 .info-sections{display:grid;gap:8px;margin-top:14px}
 .info-section h3{display:none}
@@ -234,5 +237,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 @media(max-width:390px){
   .topbar-meta .salesperson{display:none}
   .info-grid{grid-template-columns:1fr}
+  .prospect-progress-heading{align-items:flex-start;flex-direction:column}
+  .prospect-progress-grid{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}

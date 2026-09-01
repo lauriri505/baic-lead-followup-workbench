@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v3";
+const adminStorageKey = "baic_admin_demo_config_v4";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -21,6 +21,7 @@ const messages = {
     "lead.info": "线索信息", "lead.source": "线索来源", "lead.type": "线索类型", "lead.created": "创建时间",
     "field.name": "姓名", "field.phone": "手机号", "field.brand": "品牌", "field.series": "车系", "field.model": "车型", "field.region": "地区", "field.address": "地址",
     "dealer.finance": "经销商与金融信息", "dealer.name": "经销商", "dealer.placeholder": "输入或选择经销商", "dealer.hint": "可输入名称联想选择", "finance.price": "车价格", "finance.rate": "年利率", "finance.term": "贷款期数",
+    "prospect.title": "潜客推进信息", "prospect.description": "标准化字段，用于筛选和统计", "prospect.trial": "是否试驾", "prospect.visit": "是否到店", "prospect.deal": "是否成交", "prospect.unmarked": "未标记", "prospect.yes": "是", "prospect.no": "否",
     "follow.title": "本次跟进", "follow.description": "当前任务决定跟进内容，业务状态随跟进结果流转", "follow.scenario": "切换普通线索演示场景", "follow.currentState": "当前状态", "follow.result": "跟进结果", "follow.reason": "原因", "follow.reasonPlaceholder": "请输入具体原因", "follow.callbackNote": "用户约定说明", "follow.callbackPlaceholder": "例如：下班后方便接听", "follow.nextTime": "下一次联系时间", "follow.timeHint": "系统已按规则给出默认值，销售可以调整。", "follow.afterState": "提交后状态", "follow.nextTask": "下一任务", "follow.waiting": "等待选择跟进结果", "follow.noTask": "不再生成任务", "follow.attempts": "未接通 {count} 次",
     "records.operations": "操作记录", "records.notes": "跟踪记事", "records.description": "系统自动记录，按时间倒序展示。", "records.operator": "操作人：{operator}",
     "notes.addTitle": "销售手动添加跟踪记录", "notes.description": "记录沟通中的关键信息。", "notes.content": "跟踪内容", "notes.placeholder": "只记录用户输入或销售确认的关键信息", "notes.add": "添加记录", "notes.record": "跟踪记录",
@@ -50,6 +51,7 @@ const messages = {
     "lead.info": "Información del prospecto", "lead.source": "Origen del prospecto", "lead.type": "Tipo de prospecto", "lead.created": "Fecha de creación",
     "field.name": "Nombre", "field.phone": "Teléfono", "field.brand": "Marca", "field.series": "Línea", "field.model": "Versión", "field.region": "Región", "field.address": "Dirección",
     "dealer.finance": "Distribuidor e información financiera", "dealer.name": "Distribuidor", "dealer.placeholder": "Escribe o selecciona un distribuidor", "dealer.hint": "Escribe para buscar por nombre", "finance.price": "Precio del vehículo", "finance.rate": "Tasa anual", "finance.term": "Plazo del crédito",
+    "prospect.title": "Avance del prospecto", "prospect.description": "Campos estandarizados para filtros y estadísticas", "prospect.trial": "Prueba de manejo", "prospect.visit": "Visita a distribuidor", "prospect.deal": "Venta cerrada", "prospect.unmarked": "Sin marcar", "prospect.yes": "Sí", "prospect.no": "No",
     "follow.title": "Seguimiento actual", "follow.description": "La tarea define las acciones disponibles y el resultado actualiza el estado comercial", "follow.scenario": "Cambiar escenario de prospecto", "follow.currentState": "Estado actual", "follow.result": "Resultado del seguimiento", "follow.reason": "Motivo", "follow.reasonPlaceholder": "Ingresa el motivo específico", "follow.callbackNote": "Acuerdo con el cliente", "follow.callbackPlaceholder": "Ejemplo: llamar después del trabajo", "follow.nextTime": "Próximo contacto", "follow.timeHint": "El sistema propone una fecha según las reglas; el vendedor puede ajustarla.", "follow.afterState": "Estado después de enviar", "follow.nextTask": "Siguiente tarea", "follow.waiting": "Selecciona un resultado", "follow.noTask": "No se generará otra tarea", "follow.attempts": "Sin respuesta: {count} intento(s)",
     "records.operations": "Registro de operaciones", "records.notes": "Notas de seguimiento", "records.description": "Registro automático en orden cronológico inverso.", "records.operator": "Operador: {operator}",
     "notes.addTitle": "Agregar nota de seguimiento", "notes.description": "Registra la información clave de la conversación.", "notes.content": "Contenido de la nota", "notes.placeholder": "Registra únicamente información proporcionada o confirmada por el cliente", "notes.add": "Agregar nota", "notes.record": "Nota de seguimiento",
@@ -123,6 +125,7 @@ const legacyStateCodes = {
 const systemOnlyResults = new Set(["assigned", "timeout"]);
 const taskRuleIds = { FIRST_CONTACT: "RULE-FIRST", CALLBACK: "RULE-RETRY" };
 const fallbackTaskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
+const progressFieldLabels = { trialStatus: "是否试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
 
 function leadStateCode(lead) {
   return lead.stateCode || legacyStateCodes[lead.state] || "pending";
@@ -188,7 +191,8 @@ function tagNames(codes = []) {
 function resultActionFor(flow) {
   const labels = tagNames(flow.setTags || []);
   const action = "流转至 " + stateLabel(flow.next);
-  return labels.length ? action + "；标记为" + labels.join("、") : action;
+  const fieldText = Object.entries(flow.fieldUpdates || {}).map(([field, value]) => `${progressFieldLabels[field] || field}=${value === "YES" ? "是" : "否"}`);
+  return [action, labels.length ? "标记为" + labels.join("、") : "", ...fieldText].filter(Boolean).join("；");
 }
 
 function demoNow() {
@@ -257,6 +261,7 @@ function getTransition(lead, code) {
     deadline: taskInfo?.deadline || flow.deadline || "—",
     time: taskInfo ? deadlineInputValue(taskInfo.deadline) : "",
     tags: flow.setTags || lead.leadTags || [],
+    fieldUpdates: flow.fieldUpdates || {},
     nextCount: flow.unreachable ? lead.unreachableCount + 1 : lead.unreachableCount
   };
 }
@@ -315,6 +320,7 @@ function renderLead() {
   fillText("leadQualityDisplay", currentTags.length ? currentTags.join("、") : "暂无线索标签");
   $("leadQualityDisplay").className = "lead-quality-display " + ((lead.leadTags || [])[0] || "");
   fillText("attemptCount", t("follow.attempts", { count: lead.unreachableCount }));
+  renderProspectProgress(lead);
   renderOrderStatusSummary(lead);
   $("changedBadge").hidden = !lead.changed && !(lead.editRecords && lead.editRecords.length);
   $("watchButton").classList.toggle("watching", Boolean(lead.watched));
@@ -324,6 +330,17 @@ function renderLead() {
   renderResults();
   renderRecords();
   resetDynamicFields();
+}
+
+function renderProspectProgress(lead) {
+  if (!lead.prospectProgress) lead.prospectProgress = { trialStatus: null, visitStatus: null, dealStatus: null };
+  const visible = ["prospect", "won"].includes(leadStateCode(lead)) || Object.values(lead.prospectProgress).some(Boolean);
+  $("prospectProgressRow").hidden = !visible;
+  [["trialStatus", "trialStatus"], ["visitStatus", "visitStatus"], ["dealStatus", "dealStatus"]].forEach(([id, field]) => {
+    const value = lead.prospectProgress[field];
+    fillText(id, value === "YES" ? t("prospect.yes") : value === "NO" ? t("prospect.no") : t("prospect.unmarked"));
+    $(id).dataset.value = value || "UNMARKED";
+  });
 }
 
 function ensureOrderStatusData(lead) {
@@ -515,6 +532,12 @@ function submitFollowUp() {
   if (oldState !== newState) newOperations.push(["刚刚", "状态流转", oldState + " → " + newState]);
   const newTags = tagNames(transition.tags);
   if (newTags.length) newOperations.push(["刚刚", "线索标签更新", "线索标记为：" + newTags.join("、")]);
+  const progressUpdates = Object.entries(transition.fieldUpdates || {});
+  if (progressUpdates.length) {
+    if (!lead.prospectProgress) lead.prospectProgress = { trialStatus: null, visitStatus: null, dealStatus: null };
+    progressUpdates.forEach(([field, value]) => { lead.prospectProgress[field] = value; });
+    newOperations.push(["刚刚", "潜客推进信息更新", progressUpdates.map(([field, value]) => `${progressFieldLabels[field] || field}：${value === "YES" ? "是" : "否"}`).join("；")]);
+  }
   if (!transition.noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
   else newOperations.push(["刚刚", "任务结束", "后台流转规则未配置后续任务"]);
   lead.operations = newOperations.concat(lead.operations);
