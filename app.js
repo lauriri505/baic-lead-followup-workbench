@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v5";
+const adminStorageKey = "baic_admin_demo_config_v6";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -171,7 +171,12 @@ const orderStatusDataLabels = {
 };
 
 function flowsForLead(lead) {
-  return transitionConfig.flows.filter((flow) => flow.current === leadStateCode(lead) && configuredResult(flow.result)?.actor !== "system" && !systemOnlyResults.has(flow.result));
+  return transitionConfig.flows
+    .filter((flow) => {
+      const result = configuredResult(flow.result);
+      return flow.current === leadStateCode(lead) && result && result.actor !== "system" && result.enabled !== false && !systemOnlyResults.has(flow.result);
+    })
+    .sort((a, b) => (configuredResult(a.result)?.sortOrder || 999) - (configuredResult(b.result)?.sortOrder || 999));
 }
 
 function stateLabel(code) {

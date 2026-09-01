@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v5";
+const storageKey = "baic_admin_demo_config_v6";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -8,6 +8,10 @@ let state = (() => {
   } catch (error) { return copy(sourceData); }
 })();
 if (!state.transitionConfig) state.transitionConfig = copy(sourceData.transitionConfig);
+state.transitionConfig.results.forEach((result, index) => {
+  if (typeof result.enabled !== "boolean") result.enabled = true;
+  if (!Number.isFinite(result.sortOrder)) result.sortOrder = (index + 1) * 10;
+});
 Object.keys(state.permissions || {}).forEach((role) => {
   state.permissions[role] = state.permissions[role].map((permission) => permission === "配置跟进节点" ? "配置线索流转" : permission);
 });
@@ -87,7 +91,8 @@ function renderTransitionSummary() {
   const config = state.transitionConfig;
   const salesResults = config.results.filter((item) => item.actor !== "system");
   const systemEvents = config.results.filter((item) => item.actor === "system");
-  const values = [["状态节点", config.states.length, `${config.states.filter((item) => item.terminal).length} 个终态`], ["线索标签", (config.leadTags || []).length, "不参与状态流转"], ["销售跟进结果", salesResults.length, `${systemEvents.length} 个系统事件已分离`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
+  const enabledResults = salesResults.filter((item) => item.enabled !== false);
+  const values = [["状态节点", config.states.length, `${config.states.filter((item) => item.terminal).length} 个终态`], ["线索标签", (config.leadTags || []).length, "不参与状态流转"], ["销售跟进结果", enabledResults.length, `${salesResults.length} 个已配置 · ${systemEvents.length} 个系统事件`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
   $("transitionSummary").innerHTML = values.map(([label, value, note]) => `<article><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
 }
 function renderStateTree() {
@@ -101,6 +106,16 @@ function renderStateTree() {
 }
 function renderStateRows() {
   $("stateRows").innerHTML = state.transitionConfig.states.map((item) => `<tr><td><code>${esc(item.code)}</code></td><td><span class="state-name-cell"><i style="background:${item.color}"></i><strong>${esc(item.name)}</strong></span></td><td><span class="group-chip ${item.group}">${esc(item.businessStage || groupLabels[item.group] || item.group)}</span></td><td>${esc(stateName(item.parent))}</td><td>${item.level}</td><td><span class="attribute-tags">${item.terminal ? "<em>终态</em>" : ""}${item.dormant ? "<em>休眠</em>" : ""}${!item.terminal && !item.dormant ? "<em>普通</em>" : ""}</span></td><td><div class="row-actions"><button data-edit-state="${esc(item.code)}" type="button">编辑</button><button class="danger-text" data-delete-state="${esc(item.code)}" type="button">删除</button></div></td></tr>`).join("");
+}
+function renderResultRows() {
+  const salesResults = state.transitionConfig.results
+    .filter((result) => result.actor !== "system")
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, "zh-CN"));
+  $("resultRows").innerHTML = salesResults.map((result) => {
+    const nodes = [...new Set(state.transitionConfig.flows.filter((flow) => flow.result === result.code).map((flow) => stateName(flow.current)))];
+    const requirements = [result.requiresReason ? "原因必填" : "", result.requiresCallbackTime ? "下次联系时间必填" : ""].filter(Boolean);
+    return `<tr><td><span class="result-order">${result.sortOrder}</span></td><td><strong>${esc(result.name)}</strong></td><td><code>${esc(result.code)}</code></td><td>${esc(categoryLabels[result.category] || result.category || "—")}</td><td><div class="requirement-list">${requirements.length ? requirements.map((item) => `<span>${item}</span>`).join("") : "<span>无附加填写</span>"}</div></td><td><div class="node-usage">${nodes.length ? nodes.map((node) => `<span>${esc(node)}</span>`).join("") : "<span>尚未配置</span>"}</div></td><td><span class="result-status ${result.enabled ? "" : "disabled"}">${result.enabled ? "启用" : "停用"}</span></td><td><div class="row-actions"><button data-edit-result="${esc(result.code)}" type="button">编辑</button><button class="danger-text" data-delete-result="${esc(result.code)}" type="button">删除</button></div></td></tr>`;
+  }).join("") || `<tr><td colspan="8" class="empty-cell">尚未配置销售跟进结果</td></tr>`;
 }
 function renderStrategyFilter() {
   const current = $("strategyStateFilter").value;
@@ -189,7 +204,7 @@ function showFlowDetail(code) {
   $("flowDetail").innerHTML = `<header><div><span class="detail-color" style="background:${item.color}"></span><strong>${esc(item.name)}</strong><code>${esc(item.code)}</code></div><small>${esc(item.businessStage || groupLabels[item.group] || item.group)} · 层级 ${item.level}${item.terminal ? " · 终态" : ""}</small></header><div class="flow-detail-grid"><section><h3>进入该节点 <span>${incoming.length}</span></h3><ul>${incoming.map((flow) => line(flow, true)).join("") || "<li class='no-rule'>无进入规则</li>"}</ul></section><section><h3>离开该节点 <span>${outgoing.length}</span></h3><ul>${outgoing.map((flow) => line(flow, false)).join("") || "<li class='no-rule'>无离开规则</li>"}</ul></section></div>`;
 }
 function renderTransitions() {
-  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderStrategyFilter(); renderStrategyRows(); renderFlowBoard();
+  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderResultRows(); renderStrategyFilter(); renderStrategyRows(); renderFlowBoard();
   $("transitionJson").textContent = JSON.stringify(state.transitionConfig, null, 2);
 }
 function switchConfigTab(tab) {
@@ -204,8 +219,13 @@ let editingKey = null;
 function openTransitionModal(mode, key = null) {
   modalMode = mode; editingKey = key;
   const config = state.transitionConfig;
-  $("transitionModalEyebrow").textContent = mode === "state" ? "STATE DICTIONARY" : "FOLLOW-UP STRATEGY";
-  $("transitionModalTitle").textContent = `${key === null ? "添加" : "编辑"}${mode === "state" ? "节点" : "策略"}`;
+  const modalMeta = {
+    state: ["STATE DICTIONARY", "节点"],
+    result: ["FOLLOW-UP RESULT", "跟进结果"],
+    flow: ["FOLLOW-UP STRATEGY", "策略"]
+  }[mode];
+  $("transitionModalEyebrow").textContent = modalMeta[0];
+  $("transitionModalTitle").textContent = `${key === null ? "添加" : "编辑"}${modalMeta[1]}`;
   if (mode === "state") {
     const item = key ? stateByCode(key) : null;
     const parents = config.states.filter((entry) => entry.code !== key).map((entry) => `<option value="${esc(entry.code)}" ${item?.parent === entry.code ? "selected" : ""}>${esc(entry.name)}（${esc(entry.code)}）</option>`).join("");
@@ -214,15 +234,20 @@ function openTransitionModal(mode, key = null) {
     wonStageOption.textContent = "成交";
     wonStageOption.selected = item?.businessStage === "成交";
     $("modalStateBusinessStage").appendChild(wonStageOption);
+  } else if (mode === "result") {
+    const item = key ? resultByCode(key) : null;
+    const nextOrder = Math.max(0, ...config.results.filter((result) => result.actor !== "system").map((result) => result.sortOrder || 0)) + 10;
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>结果编码 *</span><input id="modalResultCode" required value="${esc(item?.code || "")}" ${item ? "readonly" : ""} placeholder="例如：interested"></label><label><span>结果名称 *</span><input id="modalResultName" required value="${esc(item?.name || "")}" placeholder="例如：有意向"></label><label><span>结果分类 *</span><select id="modalResultCategory">${Object.entries(categoryLabels).map(([value, label]) => `<option value="${value}" ${item?.category === value ? "selected" : ""}>${label}</option>`).join("")}</select></label><label><span>工作台展示顺序 *</span><input id="modalResultOrder" type="number" min="1" step="1" required value="${item?.sortOrder || nextOrder}"></label></div><div class="modal-checks"><label><input id="modalResultEnabled" type="checkbox" ${item?.enabled !== false ? "checked" : ""}>在销售工作台启用</label><label><input id="modalResultReason" type="checkbox" ${item?.requiresReason ? "checked" : ""}>选择后原因必填</label><label><input id="modalResultCallback" type="checkbox" ${item?.requiresCallbackTime ? "checked" : ""}>选择后下次联系时间必填</label></div><div class="result-source-note"><strong>销售结果</strong><span>保存后还需在“跟进策略”中绑定适用节点，工作台才会展示。</span></div>`;
   } else {
     const flow = key !== null ? config.flows.find((item) => item.id === Number(key)) : null;
     const stateOptions = (selected) => config.states.map((item) => `<option value="${esc(item.code)}" ${selected === item.code ? "selected" : ""}>${esc(item.name)}（${esc(item.code)}）</option>`).join("");
-    const results = config.results.map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}（${esc(item.code)}）</option>`).join("");
+    const salesResults = config.results.filter((item) => item.actor !== "system").sort((a, b) => a.sortOrder - b.sortOrder).map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}${item.enabled === false ? "（已停用）" : ""}</option>`).join("");
+    const systemEvents = config.results.filter((item) => item.actor === "system").map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}</option>`).join("");
+    const results = `<optgroup label="销售跟进结果">${salesResults}</optgroup><optgroup label="系统事件">${systemEvents}</optgroup>`;
     const tagOptions = (config.leadTags || []).map((tag) => `<option value="${esc(tag.code)}" ${(flow?.setTags || []).includes(tag.code) ? "selected" : ""}>${esc(tag.name)}</option>`).join("");
     const progressValue = Object.entries(flow?.fieldUpdates || {})[0];
     const progressKey = progressValue ? `${progressValue[0]}:${progressValue[1]}` : "";
-    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前节点 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 *</span><select id="modalFlowResult">${results}<option value="__new__">＋ 新建跟进结果</option></select></label><label><span>流转至 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>同时更新线索标签</span><select id="modalFlowTag"><option value="">不更新标签</option>${tagOptions}</select></label><label><span>同时更新潜客字段</span><select id="modalFlowProgress"><option value="">不更新潜客字段</option><option value="trialStatus:YES" ${progressKey === "trialStatus:YES" ? "selected" : ""}>是否试驾：是</option><option value="trialStatus:NO" ${progressKey === "trialStatus:NO" ? "selected" : ""}>是否试驾：否</option><option value="visitStatus:YES" ${progressKey === "visitStatus:YES" ? "selected" : ""}>是否到店：是</option><option value="visitStatus:NO" ${progressKey === "visitStatus:NO" ? "selected" : ""}>是否到店：否</option><option value="dealStatus:YES" ${progressKey === "dealStatus:YES" ? "selected" : ""}>是否成交：是</option><option value="dealStatus:NO" ${progressKey === "dealStatus:NO" ? "selected" : ""}>是否成交：否</option></select></label><label><span>后续任务</span><select id="modalFlowTask"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option><option value="FIRST_CONTACT" ${flow?.task === "FIRST_CONTACT" ? "selected" : ""}>首次联系</option><option value="CALLBACK" ${flow?.task === "CALLBACK" ? "selected" : ""}>普通回访</option></select></label><label><span>默认截止时间</span><input id="modalFlowDeadline" value="${esc(flow?.deadline || "—")}"></label></div><div class="new-result-fields" id="newResultFields" hidden><div class="modal-form-grid"><label><span>结果编码 *</span><input id="modalResultCode"></label><label><span>结果名称 *</span><input id="modalResultName"></label><label><span>结果分类</span><select id="modalResultCategory">${Object.entries(categoryLabels).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></label></div></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>原因必填</label><label><input id="modalFlowCallback" type="checkbox" ${resultByCode(flow?.result)?.requiresCallbackTime ? "checked" : ""}>下次联系时间必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
-    $("modalFlowResult").addEventListener("change", (event) => { $("newResultFields").hidden = event.target.value !== "__new__"; });
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前节点 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 / 系统事件 *</span><select id="modalFlowResult">${results}</select></label><label><span>流转至 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>同时更新线索标签</span><select id="modalFlowTag"><option value="">不更新标签</option>${tagOptions}</select></label><label><span>同时更新潜客字段</span><select id="modalFlowProgress"><option value="">不更新潜客字段</option><option value="trialStatus:YES" ${progressKey === "trialStatus:YES" ? "selected" : ""}>是否试驾：是</option><option value="trialStatus:NO" ${progressKey === "trialStatus:NO" ? "selected" : ""}>是否试驾：否</option><option value="visitStatus:YES" ${progressKey === "visitStatus:YES" ? "selected" : ""}>是否到店：是</option><option value="visitStatus:NO" ${progressKey === "visitStatus:NO" ? "selected" : ""}>是否到店：否</option><option value="dealStatus:YES" ${progressKey === "dealStatus:YES" ? "selected" : ""}>是否成交：是</option><option value="dealStatus:NO" ${progressKey === "dealStatus:NO" ? "selected" : ""}>是否成交：否</option></select></label><label><span>后续任务</span><select id="modalFlowTask"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option><option value="FIRST_CONTACT" ${flow?.task === "FIRST_CONTACT" ? "selected" : ""}>首次联系</option><option value="CALLBACK" ${flow?.task === "CALLBACK" ? "selected" : ""}>普通回访</option></select></label><label><span>默认截止时间</span><input id="modalFlowDeadline" value="${esc(flow?.deadline || "—")}"></label></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>该节点下原因必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
   }
   $("transitionModal").hidden = false;
   document.body.classList.add("modal-open");
@@ -237,17 +262,28 @@ function saveStateFromModal() {
   if (editingKey === null) state.transitionConfig.states.push(item); else Object.assign(stateByCode(editingKey), item);
   markDirty(); closeTransitionModal(); renderTransitions(); toast("节点已更新，保存后生效");
 }
+function saveResultFromModal() {
+  const code = $("modalResultCode").value.trim();
+  const name = $("modalResultName").value.trim();
+  if (!code || !name) return toast("请填写结果编码和结果名称");
+  if (editingKey === null && resultByCode(code)) return toast("跟进结果编码已存在");
+  const item = {
+    code,
+    name,
+    actor: "sales",
+    category: $("modalResultCategory").value,
+    enabled: $("modalResultEnabled").checked,
+    sortOrder: Number($("modalResultOrder").value),
+    requiresReason: $("modalResultReason").checked,
+    requiresCallbackTime: $("modalResultCallback").checked
+  };
+  if (editingKey === null) state.transitionConfig.results.push(item);
+  else Object.assign(resultByCode(editingKey), item);
+  markDirty(); closeTransitionModal(); renderTransitions(); switchConfigTab("results"); toast("跟进结果已更新，保存后工作台生效");
+}
 function saveFlowFromModal() {
-  const config = state.transitionConfig; let result = $("modalFlowResult").value;
-  if (result === "__new__") {
-    result = $("modalResultCode").value.trim(); const name = $("modalResultName").value.trim();
-    if (!result || !name) return toast("请填写新跟进结果的编码和名称");
-    if (resultByCode(result)) return toast("跟进结果编码已存在");
-    config.results.push({ code: result, name, actor: "sales", category: $("modalResultCategory").value, requiresCallbackTime: $("modalFlowCallback").checked, requiresReason: $("modalFlowReason").checked });
-  } else {
-    resultByCode(result).requiresCallbackTime = $("modalFlowCallback").checked;
-    resultByCode(result).requiresReason = $("modalFlowReason").checked;
-  }
+  const config = state.transitionConfig; const result = $("modalFlowResult").value;
+  if (!result) return toast("请先选择跟进结果或系统事件");
   const current = $("modalFlowCurrent").value;
   if (config.flows.some((item) => item.current === current && item.result === result && item.id !== Number(editingKey))) return toast("该节点与跟进结果的组合已存在");
   const progressParts = $("modalFlowProgress").value.split(":");
@@ -264,6 +300,12 @@ function deleteState(code) {
 function deleteFlow(id) {
   if (!confirm("确定删除这条流转策略吗？")) return;
   state.transitionConfig.flows = state.transitionConfig.flows.filter((item) => item.id !== Number(id)); markDirty(); renderTransitions(); switchConfigTab("strategies");
+}
+function deleteResult(code) {
+  if (state.transitionConfig.flows.some((flow) => flow.result === code)) return toast("该跟进结果已被流转策略使用，请先删除对应策略");
+  if (!confirm(`确定删除跟进结果“${resultName(code)}”吗？`)) return;
+  state.transitionConfig.results = state.transitionConfig.results.filter((result) => result.code !== code);
+  markDirty(); renderTransitions(); switchConfigTab("results"); toast("跟进结果已删除，保存后生效");
 }
 function validateTransitions() {
   const states = new Set(state.transitionConfig.states.map((item) => item.code)); const results = new Set(state.transitionConfig.results.map((item) => item.code)); const tags = new Set((state.transitionConfig.leadTags || []).map((item) => item.code)); const combinations = new Set(); const errors = [];
@@ -289,14 +331,16 @@ $("saveTaskRules").addEventListener("click", () => { persist(); $("taskSaveHint"
 
 qsa(".config-tab").forEach((button) => button.addEventListener("click", () => switchConfigTab(button.dataset.configTab)));
 $("showStateForm").addEventListener("click", () => openTransitionModal("state"));
+$("showResultForm").addEventListener("click", () => openTransitionModal("result"));
 $("showStrategyForm").addEventListener("click", () => openTransitionModal("flow"));
 $("strategyStateFilter").addEventListener("change", renderStrategyRows);
 $("stateTree").addEventListener("click", (event) => { const target = event.target.closest("[data-edit-state]"); if (target) openTransitionModal("state", target.dataset.editState); });
 $("stateRows").addEventListener("click", (event) => { const edit = event.target.closest("[data-edit-state]"); const remove = event.target.closest("[data-delete-state]"); if (edit) openTransitionModal("state", edit.dataset.editState); if (remove) deleteState(remove.dataset.deleteState); });
+$("resultRows").addEventListener("click", (event) => { const edit = event.target.closest("[data-edit-result]"); const remove = event.target.closest("[data-delete-result]"); if (edit) openTransitionModal("result", edit.dataset.editResult); if (remove) deleteResult(remove.dataset.deleteResult); });
 $("strategyRows").addEventListener("click", (event) => { const edit = event.target.closest("[data-edit-flow]"); const remove = event.target.closest("[data-delete-flow]"); if (edit) openTransitionModal("flow", edit.dataset.editFlow); if (remove) deleteFlow(remove.dataset.deleteFlow); });
 $("flowBoard").addEventListener("click", (event) => { const target = event.target.closest("[data-flow-state]"); if (target) showFlowDetail(target.dataset.flowState); });
 $("flowBoard").addEventListener("keydown", (event) => { const target = event.target.closest("[data-flow-state]"); if (target && ["Enter", " "].includes(event.key)) { event.preventDefault(); showFlowDetail(target.dataset.flowState); } });
-$("transitionModalForm").addEventListener("submit", (event) => { event.preventDefault(); modalMode === "state" ? saveStateFromModal() : saveFlowFromModal(); });
+$("transitionModalForm").addEventListener("submit", (event) => { event.preventDefault(); if (modalMode === "state") saveStateFromModal(); else if (modalMode === "result") saveResultFromModal(); else saveFlowFromModal(); });
 [$("closeTransitionModal"), $("cancelTransitionModal")].forEach((button) => button.addEventListener("click", closeTransitionModal));
 $("transitionModal").addEventListener("click", (event) => { if (event.target === $("transitionModal")) closeTransitionModal(); });
 document.addEventListener("keydown", (event) => { if (event.key === "Escape" && !$("transitionModal").hidden) closeTransitionModal(); });
