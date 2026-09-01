@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v8";
+const adminStorageKey = "baic_admin_demo_config_v10";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -21,8 +21,8 @@ const messages = {
     "lead.info": "线索信息", "lead.source": "线索来源", "lead.type": "线索类型", "lead.created": "创建时间",
     "field.name": "姓名", "field.phone": "手机号", "field.brand": "品牌", "field.series": "车系", "field.model": "车型", "field.region": "地区", "field.address": "地址",
     "dealer.finance": "经销商与金融信息", "dealer.name": "经销商", "dealer.placeholder": "输入或选择经销商", "dealer.hint": "可输入名称联想选择", "finance.price": "车价格", "finance.rate": "年利率", "finance.term": "贷款期数",
-    "prospect.title": "客户推进信息", "prospect.description": "三个字段独立累计，用于筛选和统计", "prospect.trial": "是否试驾", "prospect.visit": "是否到店", "prospect.deal": "是否成交", "prospect.unmarked": "未标记", "prospect.yes": "是", "prospect.no": "否",
-    "progressUpdate.title": "本次同步更新", "progressUpdate.description": "试驾、到店、成交可同时更新；不选择则保持当前值", "progressUpdate.optional": "选填", "progressUpdate.current": "当前：{value}", "progressUpdate.keep": "不更新", "progressUpdate.yes": "是", "progressUpdate.no": "否", "progressUpdate.preview": "推进信息更新", "progressUpdate.unchanged": "保持当前进度",
+    "prospect.title": "客户推进信息", "prospect.description": "三个字段独立累计，用于筛选和统计", "prospect.trial": "是否预约试驾", "prospect.visit": "是否到店", "prospect.deal": "是否成交", "prospect.unmarked": "未标记", "prospect.yes": "是", "prospect.no": "否",
+    "progressUpdate.title": "本次同步更新", "progressUpdate.description": "预约试驾、到店、成交可同时更新；不选择则保持当前值", "progressUpdate.optional": "选填", "progressUpdate.current": "当前：{value}", "progressUpdate.keep": "不更新", "progressUpdate.yes": "是", "progressUpdate.no": "否", "progressUpdate.preview": "推进信息更新", "progressUpdate.unchanged": "保持当前进度",
     "follow.title": "本次跟进", "follow.description": "当前任务决定跟进内容，业务状态随跟进结果流转", "follow.scenario": "切换普通线索演示场景", "follow.currentState": "当前状态", "follow.result": "跟进结果", "follow.reason": "原因", "follow.reasonPlaceholder": "请输入具体原因", "follow.callbackNote": "用户约定说明", "follow.callbackPlaceholder": "例如：下班后方便接听", "follow.nextTime": "下一次联系时间", "follow.timeHint": "系统已按规则给出默认值，销售可以调整。", "follow.afterState": "提交后状态", "follow.nextTask": "下一任务", "follow.waiting": "等待选择跟进结果", "follow.noTask": "不再生成任务", "follow.attempts": "未接通 {count} 次",
     "records.operations": "操作记录", "records.notes": "跟踪记事", "records.description": "系统自动记录，按时间倒序展示。", "records.operator": "操作人：{operator}",
     "notes.addTitle": "销售手动添加跟踪记录", "notes.description": "记录沟通中的关键信息。", "notes.content": "跟踪内容", "notes.placeholder": "只记录用户输入或销售确认的关键信息", "notes.add": "添加记录", "notes.record": "跟踪记录",
@@ -51,7 +51,7 @@ const messages = {
     "lead.info": "Información del prospecto", "lead.source": "Origen del prospecto", "lead.type": "Tipo de prospecto", "lead.created": "Fecha de creación",
     "field.name": "Nombre", "field.phone": "Teléfono", "field.brand": "Marca", "field.series": "Línea", "field.model": "Versión", "field.region": "Región", "field.address": "Dirección",
     "dealer.finance": "Distribuidor e información financiera", "dealer.name": "Distribuidor", "dealer.placeholder": "Escribe o selecciona un distribuidor", "dealer.hint": "Escribe para buscar por nombre", "finance.price": "Precio del vehículo", "finance.rate": "Tasa anual", "finance.term": "Plazo del crédito",
-    "prospect.title": "Avance del prospecto", "prospect.description": "Campos estandarizados para filtros y estadísticas", "prospect.trial": "Prueba de manejo", "prospect.visit": "Visita a distribuidor", "prospect.deal": "Venta cerrada", "prospect.unmarked": "Sin marcar", "prospect.yes": "Sí", "prospect.no": "No",
+    "prospect.title": "Avance del prospecto", "prospect.description": "Campos estandarizados para filtros y estadísticas", "prospect.trial": "Cita de prueba de manejo", "prospect.visit": "Visita a distribuidor", "prospect.deal": "Venta cerrada", "prospect.unmarked": "Sin marcar", "prospect.yes": "Sí", "prospect.no": "No",
     "progressUpdate.title": "Actualización de avance", "progressUpdate.description": "Puedes actualizar prueba, visita y cierre al mismo tiempo; sin selección se conserva el valor actual", "progressUpdate.optional": "Opcional", "progressUpdate.current": "Actual: {value}", "progressUpdate.keep": "Sin cambios", "progressUpdate.yes": "Sí", "progressUpdate.no": "No", "progressUpdate.preview": "Actualización del avance", "progressUpdate.unchanged": "Conservar avance actual",
     "follow.title": "Seguimiento actual", "follow.description": "La tarea define las acciones disponibles y el resultado actualiza el estado comercial", "follow.scenario": "Cambiar escenario de prospecto", "follow.currentState": "Estado actual", "follow.result": "Resultado del seguimiento", "follow.reason": "Motivo", "follow.reasonPlaceholder": "Ingresa el motivo específico", "follow.callbackNote": "Acuerdo con el cliente", "follow.callbackPlaceholder": "Ejemplo: llamar después del trabajo", "follow.nextTime": "Próximo contacto", "follow.timeHint": "El sistema propone una fecha según las reglas; el vendedor puede ajustarla.", "follow.afterState": "Estado después de enviar", "follow.nextTask": "Siguiente tarea", "follow.waiting": "Selecciona un resultado", "follow.noTask": "No se generará otra tarea", "follow.attempts": "Sin respuesta: {count} intento(s)",
     "records.operations": "Registro de operaciones", "records.notes": "Notas de seguimiento", "records.description": "Registro automático en orden cronológico inverso.", "records.operator": "Operador: {operator}",
@@ -123,9 +123,8 @@ const legacyStateCodes = {
 };
 
 const systemOnlyResults = new Set(["assigned", "timeout"]);
-const taskRuleIds = { FIRST_CONTACT: "RULE-FIRST", CALLBACK: "RULE-RETRY" };
 const fallbackTaskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
-const progressFieldLabels = { trialStatus: "是否试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
+const progressFieldLabels = { trialStatus: "是否预约试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
 
 function leadStateCode(lead) {
   return lead.stateCode || legacyStateCodes[lead.state] || "not_followed";
@@ -139,20 +138,20 @@ function configuredResult(code) {
   return transitionConfig.results.find((item) => item.code === code);
 }
 
-function configuredTaskRule(code) {
-  const id = taskRuleIds[code];
-  return configuredTaskRules.find((item) => item.id === id);
+function configuredTaskRule(flow) {
+  return configuredTaskRules.find((item) => item.id === flow.taskRuleId)
+    || configuredTaskRules.find((item) => item.group === flow.task);
 }
 
 function taskInfoForFlow(flow) {
   if (!flow?.task) return null;
-  const rule = configuredTaskRule(flow.task);
+  const rule = configuredTaskRule(flow);
   if (rule && rule.enabled === false) return null;
   return {
     code: flow.task,
     name: rule?.type || fallbackTaskLabels[flow.task] || flow.task,
-    trigger: rule?.trigger || configuredResult(flow.result)?.name || flow.result,
-    deadline: flow.deadline || rule?.deadline || "—"
+    trigger: flow.taskTrigger || rule?.trigger || configuredResult(flow.result)?.name || flow.result,
+    deadline: rule?.deadline || flow.deadline || "—"
   };
 }
 
@@ -252,7 +251,7 @@ function getTransition(lead, code) {
   if (!flow) return null;
   const nextCount = flow.unreachable ? lead.unreachableCount + 1 : lead.unreachableCount;
   const limitReached = Boolean(flow.terminalAt && nextCount >= flow.terminalAt);
-  const effectiveFlow = limitReached ? { ...flow, next: flow.terminalNext, setTags: flow.terminalTags || flow.setTags, task: null, deadline: "—" } : flow;
+  const effectiveFlow = limitReached ? { ...flow, next: flow.terminalNext, qualityUpdate: flow.terminalQuality || flow.qualityUpdate, setTags: flow.terminalTags || flow.setTags, task: null, deadline: "—" } : flow;
   const nextState = configuredState(effectiveFlow.next);
   const taskInfo = taskInfoForFlow(effectiveFlow);
   return {
@@ -267,6 +266,7 @@ function getTransition(lead, code) {
     deadline: taskInfo?.deadline || effectiveFlow.deadline || "—",
     time: taskInfo ? deadlineInputValue(taskInfo.deadline) : "",
     tags: [],
+    qualityUpdate: effectiveFlow.qualityUpdate || "UNKNOWN",
     fieldUpdates: effectiveFlow.fieldUpdates || {},
     nextCount
   };
@@ -492,6 +492,14 @@ function isCompletedDeal(progressUpdates = collectProgressUpdates()) {
   return progressUpdates.dealStatus === "YES";
 }
 
+function projectedProgressState(lead, transition, progressUpdates = collectProgressUpdates()) {
+  if (!transition || selectedResult !== "interested") return transition?.stateCode || leadStateCode(lead);
+  const currentProgress = { trialStatus: null, visitStatus: null, dealStatus: null, ...(lead.prospectProgress || {}), ...progressUpdates };
+  const rules = [...(transitionConfig.progressStateRules || [])].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  const matchedRule = rules.find((rule) => currentProgress[rule.field] === rule.value && Object.entries(rule.requires || {}).every(([field, value]) => currentProgress[field] === value));
+  return matchedRule?.next || transition.stateCode;
+}
+
 function updateActionPreview() {
   const updates = collectProgressUpdates();
   const entries = Object.entries(updates);
@@ -503,9 +511,10 @@ function updateActionPreview() {
   }
   const transition = getTransition(activeLead(), selectedResult);
   if (!transition) return;
-  const noNextTask = transition.noNextTask || isCompletedDeal(updates);
+  const projectedState = projectedProgressState(activeLead(), transition, updates);
+  const noNextTask = transition.noNextTask || projectedState === "won";
   $("nextTimeRow").hidden = noNextTask;
-  fillText("previewState", stateLabel(transition.stateCode));
+  fillText("previewState", stateLabel(projectedState));
   fillText("previewTask", noNextTask ? t("follow.noTask") : transition.task + " · " + transition.deadline);
 }
 
@@ -565,9 +574,10 @@ function validateSubmission(transition) {
   if (!selectedResult) return t("validation.result");
   if (!transition) return "当前结果没有匹配到后台流转规则，请管理员检查配置";
   const progressUpdates = collectProgressUpdates();
+  const projectedState = projectedProgressState(activeLead(), transition, progressUpdates);
   if (isCompletedDeal(progressUpdates) && ["clear_reject", "bought_other"].includes(selectedResult)) return t("validation.progressConflict");
   if (!$("reasonRow").hidden && !$("reasonInput").value.trim()) return t("validation.reason");
-  if (!transition.noNextTask && !isCompletedDeal(progressUpdates) && !$("nextTimeDefault").value) return t("validation.nextTime");
+  if (!transition.noNextTask && projectedState !== "won" && !$("nextTimeDefault").value) return t("validation.nextTime");
   return "";
 }
 
@@ -587,14 +597,18 @@ function submitFollowUp() {
   const reason = $("reasonInput").value.trim();
   const nextTime = $("nextTimeDefault").value;
   const progressUpdateMap = collectProgressUpdates();
-  const noNextTask = transition.noNextTask || isCompletedDeal(progressUpdateMap);
+  const newStateCode = projectedProgressState(lead, transition, progressUpdateMap);
+  const noNextTask = transition.noNextTask || newStateCode === "won";
   const oldState = stateLabel(leadStateCode(lead));
-  const newState = stateLabel(transition.stateCode);
+  const newState = stateLabel(newStateCode);
   const newOperations = [
     ["刚刚", "跟进提交", "跟进结果：" + resultLabel + (reason ? "；原因：" + reason : "")],
     ["刚刚", "任务完成", lead.task.group + "任务 " + lead.task.id + " 已由处理中更新为已完成"]
   ];
   if (oldState !== newState) newOperations.push(["刚刚", "状态流转", oldState + " → " + newState]);
+  const previousQuality = lead.leadQuality || "UNKNOWN";
+  const nextQuality = transition.qualityUpdate || previousQuality;
+  if (previousQuality !== nextQuality) newOperations.push(["刚刚", "线索有效性更新", `${previousQuality === "VALID" ? "有效" : previousQuality === "INVALID" ? "无效" : "待判定"} → ${nextQuality === "VALID" ? "有效" : nextQuality === "INVALID" ? "无效" : "待判定"}`]);
   const progressUpdates = Object.entries(progressUpdateMap);
   if (progressUpdates.length) {
     if (!lead.prospectProgress) lead.prospectProgress = { trialStatus: null, visitStatus: null, dealStatus: null };
@@ -604,7 +618,8 @@ function submitFollowUp() {
   if (!noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
   else newOperations.push(["刚刚", "任务结束", isCompletedDeal(progressUpdateMap) ? "客户已标记成交，不再生成后续联系任务" : "后台流转规则未配置后续任务"]);
   lead.operations = newOperations.concat(lead.operations);
-  lead.stateCode = transition.stateCode;
+  lead.stateCode = newStateCode;
+  lead.leadQuality = nextQuality;
   lead.leadTags = [];
   lead.unreachableCount = transition.nextCount;
   if (noNextTask) {

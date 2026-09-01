@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v8";
+const storageKey = "baic_admin_demo_config_v10";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -22,7 +22,7 @@ const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": 
 const roleLabels = { tenant_admin: "北汽管理员", sales: "北汽销售" };
 const permissionOptions = ["查看北汽全部线索", "查看本人负责线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"];
 const viewNames = { dashboard: "后台总览", leads: "线索数据", accounts: "账号与角色", tasks: "任务配置", nodes: "线索流转配置" };
-const groupLabels = { entry: "系统入口", not_followed: "未跟进", followed: "已跟进", invalid: "无效线索", overdue: "过期未跟进" };
+const groupLabels = { entry: "系统入口", not_followed: "未跟进", followed: "已跟进", invalid: "无效线索", overdue: "过期未跟进", won: "成交" };
 const mainStatusGroups = Object.fromEntries(Object.entries(groupLabels).map(([group, label]) => [label, group]));
 const categoryLabels = { contact: "联系", unreachable: "未接通", callback: "约定回访", dormant: "暂存", lost: "终止" };
 const taskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
@@ -48,15 +48,21 @@ function openView(view) {
   ({ leads: renderLeads, accounts: renderAccounts, tasks: renderTaskRules, nodes: renderTransitions })[view]?.();
 }
 
-function statusClass(status) { return status === "无效线索" ? "lost" : status === "过期未跟进" ? "dormant" : status === "已跟进" ? "won" : ""; }
+const qualityLabels = { UNKNOWN: "待判定", VALID: "有效", INVALID: "无效" };
+function statusClass(status) { return status === "无效线索" ? "lost" : status === "过期未跟进" ? "dormant" : ["已跟进", "成交"].includes(status) ? "won" : ""; }
 function leadRow(lead) {
-  return `<tr><td><strong>${esc(lead.id)}</strong></td><td class="lead-person"><strong>${esc(lead.name)}</strong><small>${esc(lead.phone)}</small></td><td>${esc(lead.source)}</td><td>BAIC ${esc(lead.series)} ${esc(lead.model)}</td><td><span class="table-status ${statusClass(lead.status)}">${esc(lead.status)} · ${esc(lead.subStatus)}</span></td><td>${esc(lead.assignee)}</td><td><span class="task-state ${lead.taskStatus === "处理中" ? "processing" : ""}">${esc(lead.task)} · ${esc(lead.taskStatus)}</span></td><td>${esc(lead.createdAt)}</td></tr>`;
+  return `<tr><td><strong>${esc(lead.id)}</strong></td><td class="lead-person"><strong>${esc(lead.name)}</strong><small>${esc(lead.phone)}</small></td><td>${esc(lead.source)}</td><td>BAIC ${esc(lead.series)} ${esc(lead.model)}</td><td><span class="table-status ${statusClass(lead.status)}">${esc(lead.status)} · ${esc(lead.subStatus)}</span></td><td><span class="quality-chip ${(lead.quality || "UNKNOWN").toLowerCase()}">${esc(qualityLabels[lead.quality] || "待判定")}</span></td><td>${esc(lead.assignee)}</td><td><span class="task-state ${lead.taskStatus === "处理中" ? "processing" : ""}">${esc(lead.task)} · ${esc(lead.taskStatus)}</span></td><td>${esc(lead.createdAt)}</td></tr>`;
 }
 function renderDashboard() {
   const activeTasks = state.leads.filter((lead) => ["待处理", "处理中"].includes(lead.taskStatus)).length;
-  const metrics = [["北汽线索总数", state.leads.length, "当前租户全部品牌线索", "emphasis"], ["未跟进", state.leads.filter((lead) => lead.status === "未跟进").length, "尚未完成有效联系", ""], ["已跟进", state.leads.filter((lead) => lead.status === "已跟进").length, "已获得明确客户反馈", ""], ["有效销售任务", activeTasks, "待处理 + 处理中", ""]];
+  const validCount = state.leads.filter((lead) => lead.quality === "VALID").length;
+  const invalidCount = state.leads.filter((lead) => lead.quality === "INVALID").length;
+  const judgedCount = validCount + invalidCount;
+  const validRate = judgedCount ? `${Math.round(validCount / judgedCount * 100)}%` : "—";
+  const invalidRate = judgedCount ? `${Math.round(invalidCount / judgedCount * 100)}%` : "—";
+  const metrics = [["北汽线索总数", state.leads.length, "当前租户全部品牌线索", "emphasis"], ["已判定有效率", validRate, `${validCount} 条有效 / ${judgedCount} 条已判定`, ""], ["已判定无效率", invalidRate, `${invalidCount} 条无效 / ${judgedCount} 条已判定`, ""], ["待判定线索", state.leads.filter((lead) => !lead.quality || lead.quality === "UNKNOWN").length, "未跟进、过期或未接通未达上限", ""], ["有效销售任务", activeTasks, "待处理 + 处理中", ""]];
   $("metricGrid").innerHTML = metrics.map(([label, value, note, cls]) => `<article class="metric-card ${cls}"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
-  const stages = ["未跟进", "已跟进", "无效线索", "过期未跟进"].map((name) => [name, state.leads.filter((lead) => lead.status === name).length]);
+  const stages = ["未跟进", "已跟进", "无效线索", "过期未跟进", "成交"].map((name) => [name, state.leads.filter((lead) => lead.status === name).length]);
   const max = Math.max(...stages.map((item) => item[1]), 1);
   $("stageBars").innerHTML = stages.map(([name, count]) => `<div class="stage-row"><span>${name}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.max(5, count / max * 100)}%"></div></div><strong>${count}</strong></div>`).join("");
   $("taskSummary").innerHTML = ["待处理", "处理中", "已逾期", "已完成", "已结束"].map((name) => `<div class="summary-cell"><span>${name}</span><strong>${state.leads.filter((lead) => lead.taskStatus === name).length}</strong></div>`).join("");
@@ -94,11 +100,13 @@ function renderTransitionSummary() {
   const systemEvents = config.results.filter((item) => item.actor === "system");
   const enabledResults = salesResults.filter((item) => item.enabled !== false);
   const mainStatuses = new Set(config.states.filter((item) => item.group !== "entry").map((item) => item.businessStage));
-  const values = [["主状态", mainStatuses.size, `${config.states.length - 1} 个业务子状态`], ["推进字段", (config.progressFields || []).length, "试驾 / 到店 / 成交"], ["销售跟进结果", enabledResults.length, `${salesResults.length} 个已配置 · ${systemEvents.length} 个系统事件`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
+  const values = [["主状态", mainStatuses.size, `${config.states.length - 1} 个业务子状态`], ["有效性口径", (config.qualityOptions || []).length, "待判定 / 有效 / 无效"], ["推进字段", (config.progressFields || []).length, "预约试驾 / 到店 / 成交"], ["销售跟进结果", enabledResults.length, `${salesResults.length} 个已配置 · ${systemEvents.length} 个系统事件`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
   $("transitionSummary").innerHTML = values.map(([label, value, note]) => `<article><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
 }
 function renderStateTree() {
-  $("leadTagList").innerHTML = (state.transitionConfig.progressFields || []).map((field) => `<span class="lead-quality-tag" style="--tag-color:#2fcf9f"><i></i>${esc(field.name)}<small>是 / 否</small></span>`).join("");
+  const qualityItems = (state.transitionConfig.qualityOptions || []).map((item) => `<span class="lead-quality-tag" style="--tag-color:${item.color}"><i></i>有效性：${esc(item.name)}<small>${esc(item.code)}</small></span>`);
+  const progressItems = (state.transitionConfig.progressFields || []).map((field) => `<span class="lead-quality-tag" style="--tag-color:#2fcf9f"><i></i>${esc(field.name)}<small>是 / 否</small></span>`);
+  $("leadTagList").innerHTML = [...qualityItems, ...progressItems].join("");
   const levels = [...new Set(state.transitionConfig.states.map((item) => item.level))].sort((a, b) => a - b);
   $("stateTree").style.gridTemplateColumns = `repeat(${levels.length}, minmax(180px, 1fr))`;
   $("stateTree").innerHTML = levels.map((level) => {
@@ -129,71 +137,78 @@ function renderStrategyRows() {
   $("strategyCount").textContent = `显示 ${flows.length} / ${state.transitionConfig.flows.length} 条规则`;
   $("strategyRows").innerHTML = flows.map((flow) => {
     const result = resultByCode(flow.result);
-    const progressLabels = { trialStatus: "是否试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
+    const progressLabels = { trialStatus: "是否预约试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
     const fieldUpdates = Object.entries(flow.fieldUpdates || {}).map(([field, value]) => `${progressLabels[field] || field}：${value === "YES" ? "是" : "否"}`);
     const limitUpdate = flow.terminalAt ? `累计${flow.terminalAt}次 → ${stateName(flow.terminalNext)}` : "";
-    const updates = [...(flow.setTags || []).map((code) => `标签：${tagByCode(code)?.name || code}`), ...fieldUpdates, flow.unreachable ? "未接通次数 +1" : "", limitUpdate, flow.reason || result?.requiresReason ? "原因必填" : "", result?.requiresCallbackTime ? "时间必填" : "", flow.retry ? "生成重试" : "", flow.reactivation ? "到期回捞" : ""].filter(Boolean);
+    const qualityUpdate = flow.qualityUpdate ? `有效性：${qualityLabels[flow.qualityUpdate] || flow.qualityUpdate}` : "";
+    const updates = [qualityUpdate, ...(flow.setTags || []).map((code) => `标签：${tagByCode(code)?.name || code}`), ...fieldUpdates, flow.unreachable ? "未接通次数 +1" : "", limitUpdate, flow.reason || result?.requiresReason ? "原因必填" : "", result?.requiresCallbackTime ? "时间必填" : "", flow.retry ? "生成重试" : "", flow.reactivation ? "到期回捞" : ""].filter(Boolean);
     const resultSource = result?.actor === "system" ? "系统事件" : "销售结果";
-    return `<tr><td><strong>${esc(stateName(flow.current))}</strong><small class="table-code">${esc(flow.current)}</small></td><td><strong>${esc(resultName(flow.result))}</strong><small class="table-code">${resultSource} · ${categoryLabels[result?.category] || result?.category || "—"}</small></td><td><span class="flow-direction">→</span><strong>${esc(stateName(flow.next))}</strong>${flow.current === flow.next ? `<small class="self-loop">状态保持</small>` : ""}</td><td><div class="update-tags">${updates.length ? updates.map((item) => `<span>${item}</span>`).join("") : "<span>无</span>"}</div></td><td>${flow.task ? `<strong>${taskLabels[flow.task] || esc(flow.task)}</strong><small class="table-code">${esc(flow.task)}</small>` : "不生成任务"}</td><td>${esc(flow.deadline || "—")}</td><td><div class="row-actions"><button data-edit-flow="${flow.id}" type="button">编辑</button><button class="danger-text" data-delete-flow="${flow.id}" type="button">删除</button></div></td></tr>`;
+    const taskRule = state.taskRules.find((item) => item.id === flow.taskRuleId);
+    return `<tr><td><strong>${esc(stateName(flow.current))}</strong><small class="table-code">${esc(flow.current)}</small></td><td><strong>${esc(resultName(flow.result))}</strong><small class="table-code">${resultSource} · ${categoryLabels[result?.category] || result?.category || "—"}</small></td><td><span class="flow-direction">→</span><strong>${esc(stateName(flow.next))}</strong>${flow.current === flow.next ? `<small class="self-loop">状态保持</small>` : ""}</td><td><div class="update-tags">${updates.length ? updates.map((item) => `<span>${item}</span>`).join("") : "<span>无</span>"}</div></td><td>${taskRule ? `<strong>${esc(taskRule.type)}</strong><small class="table-code">${esc(taskRule.id)} · ${esc(taskRule.trigger)}</small>` : flow.task ? `<strong>${taskLabels[flow.task] || esc(flow.task)}</strong><small class="table-code">未绑定具体任务规则</small>` : "不生成任务"}</td><td>${esc(taskRule?.deadline || flow.deadline || "—")}</td><td><div class="row-actions"><button data-edit-flow="${flow.id}" type="button">编辑</button><button class="danger-text" data-delete-flow="${flow.id}" type="button">删除</button></div></td></tr>`;
   }).join("") || `<tr><td colspan="7" class="empty-cell">当前筛选条件下没有流转规则</td></tr>`;
+}
+function renderProgressStateRows() {
+  const fieldLabels = { trialStatus: "是否预约试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
+  const valueLabels = { YES: "是", NO: "否" };
+  const rules = [...(state.transitionConfig.progressStateRules || [])].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+  $("progressStateRows").innerHTML = rules.map((rule) => {
+    const requirements = Object.entries(rule.requires || {}).map(([field, value]) => `${fieldLabels[field] || field}=${valueLabels[value] || value}`).join("；") || "无";
+    return `<tr><td><strong>${rule.priority}</strong></td><td>${esc(fieldLabels[rule.field] || rule.field)}</td><td>${esc(valueLabels[rule.value] || rule.value)}</td><td>${esc(requirements)}</td><td><span class="flow-direction">→</span><strong>${esc(stateName(rule.next))}</strong></td></tr>`;
+  }).join("") || `<tr><td colspan="5" class="empty-cell">尚未配置客户推进节点判定规则</td></tr>`;
 }
 function renderFlowBoard() {
   const config = state.transitionConfig;
-  const levels = [...new Set(config.states.map((item) => item.level))].sort((a, b) => a - b);
-  $("flowLegend").innerHTML = `<span><i class="legend-dot not-followed"></i>未跟进</span><span><i class="legend-dot followed"></i>已跟进</span><span><i class="legend-dot invalid"></i>无效线索</span><span><i class="legend-dot overdue"></i>过期未跟进</span><strong>4 个主状态 · ${state.transitionConfig.flows.length} 条规则</strong>`;
-  const nodeWidth = 172;
-  const nodeHeight = 58;
-  const columnGap = 265;
-  const rowStep = 62;
-  const paddingX = 46;
-  const paddingY = 38;
-  const baicRows = { issued: 4, not_followed: 4, overdue: 0.2, followed_prospect: 2.1, followed_lost_reject: 4.1, followed_lost_other: 6.1, invalid_unreachable: 8.1, invalid_number: 10.1 };
-  const positions = {};
-  levels.forEach((level) => {
-    const entries = config.states.filter((item) => item.level === level);
-    entries.forEach((item, index) => {
-      const fallbackRow = index - (entries.length - 1) / 2 + 4.8;
-      positions[item.code] = { x: paddingX + (level - 1) * columnGap, y: paddingY + (baicRows[item.code] ?? fallbackRow) * rowStep };
-    });
-  });
-  const canvasWidth = paddingX * 2 + (Math.max(...levels) - 1) * columnGap + nodeWidth;
-  const canvasHeight = Math.max(720, ...Object.values(positions).map((point) => point.y + nodeHeight + paddingY));
-  const groupedEdges = Object.values(config.flows.reduce((groups, flow) => {
-    const key = `${flow.current}:${flow.next}`;
-    if (!groups[key]) groups[key] = { current: flow.current, next: flow.next, results: [] };
-    groups[key].results.push(resultName(flow.result));
-    return groups;
-  }, {}));
-  const edgeSvg = groupedEdges.map((flow) => {
-    const source = positions[flow.current];
-    const target = positions[flow.next];
+  const diagram = config.journeyDiagram || { width: 1200, height: 700, nodes: [], edges: [] };
+  $("flowLegend").innerHTML = `<span><i class="legend-dot not-followed"></i>进行中状态</span><span><i class="legend-dot task"></i>销售任务</span><span><i class="legend-dot won"></i>成交终态</span><span><i class="legend-dot failure"></i>战败终态</span><span><i class="legend-dot invalid"></i>无效终态</span><strong>状态 + 跟进结果 → 新状态 + 有效性 + 下一任务</strong>`;
+  const nodeMap = Object.fromEntries(diagram.nodes.map((item) => [item.id, item]));
+  const nodeSize = (item) => item.kind === "decision" ? { width: 156, height: 88 } : { width: 184, height: 62 };
+  const edgeSvg = diagram.edges.map((edge) => {
+    const source = nodeMap[edge.from];
+    const target = nodeMap[edge.to];
     if (!source || !target) return "";
-    const label = flow.results.length > 3 ? `${flow.results.slice(0, 3).join(" / ")} 等${flow.results.length}项` : flow.results.join(" / ");
-    if (flow.current === flow.next) {
-      const x1 = source.x + nodeWidth * .72;
-      const y1 = source.y;
-      const x2 = source.x + nodeWidth;
-      const y2 = source.y + nodeHeight * .3;
-      const path = `M ${x1} ${y1} C ${x1} ${y1 - 54}, ${x2 + 58} ${y1 - 54}, ${x2 + 58} ${y2} C ${x2 + 58} ${y2 + 14}, ${x2 + 28} ${y2}, ${x2} ${y2}`;
-      return `<g class="flow-edge self-edge"><path d="${path}" marker-end="url(#flowArrow)"></path><text x="${source.x + nodeWidth + 24}" y="${source.y - 31}" text-anchor="middle">${esc(label)}</text></g>`;
+    const sourceSize = nodeSize(source);
+    const targetSize = nodeSize(target);
+    let x1;
+    let y1;
+    let x2;
+    let y2;
+    let path;
+    if (Math.abs(target.x - source.x) < 60) {
+      const downward = target.y >= source.y;
+      x1 = source.x + sourceSize.width / 2;
+      y1 = downward ? source.y + sourceSize.height : source.y;
+      x2 = target.x + targetSize.width / 2;
+      y2 = downward ? target.y : target.y + targetSize.height;
+      const bend = Math.max(54, Math.abs(y2 - y1) * .42);
+      path = `M ${x1} ${y1} C ${x1} ${y1 + (downward ? bend : -bend)}, ${x2} ${y2 + (downward ? -bend : bend)}, ${x2} ${y2}`;
+    } else {
+      const forward = target.x > source.x;
+      x1 = forward ? source.x + sourceSize.width : source.x;
+      y1 = source.y + sourceSize.height / 2;
+      x2 = forward ? target.x : target.x + targetSize.width;
+      y2 = target.y + targetSize.height / 2;
+      const bend = Math.max(72, Math.abs(x2 - x1) * .42);
+      path = `M ${x1} ${y1} C ${x1 + (forward ? bend : -bend)} ${y1}, ${x2 + (forward ? -bend : bend)} ${y2}, ${x2} ${y2}`;
     }
-    const x1 = source.x + nodeWidth;
-    const y1 = source.y + nodeHeight / 2;
-    const x2 = target.x;
-    const y2 = target.y + nodeHeight / 2;
-    const bend = Math.max(72, (x2 - x1) * 0.46);
-    const path = `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`;
     const labelX = (x1 + x2) / 2;
-    const labelY = (y1 + y2) / 2 - 7;
-    return `<g class="flow-edge"><path d="${path}" marker-end="url(#flowArrow)"></path><text x="${labelX}" y="${labelY}" text-anchor="middle">${esc(label)}</text></g>`;
+    const labelY = (y1 + y2) / 2 - 8;
+    return `<g class="flow-edge journey-edge"><path d="${path}" marker-end="url(#flowArrow)"></path>${edge.label ? `<text x="${labelX}" y="${labelY}" text-anchor="middle">${esc(edge.label)}</text>` : ""}</g>`;
   }).join("");
-  const nodeSvg = config.states.map((item) => {
-    const point = positions[item.code];
-    const count = config.flows.filter((flow) => flow.current === item.code).length;
-    return `<g class="flow-node-svg ${item.terminal ? "terminal" : ""}" data-flow-state="${esc(item.code)}" role="button" tabindex="0" transform="translate(${point.x} ${point.y})" style="--node-color:${item.color}"><rect class="node-body" width="${nodeWidth}" height="${nodeHeight}" rx="8"></rect><rect class="node-accent" width="4" height="${nodeHeight}" rx="2"></rect><circle class="node-port in" cx="0" cy="${nodeHeight / 2}" r="3"></circle><circle class="node-port out" cx="${nodeWidth}" cy="${nodeHeight / 2}" r="3"></circle><text class="node-title" x="18" y="24">${esc(item.name)}</text><text class="node-stage" x="18" y="42">${esc(item.businessStage || groupLabels[item.group])}</text><g class="node-count" transform="translate(${nodeWidth - 25} 10)"><circle cx="8" cy="8" r="8"></circle><text x="8" y="11" text-anchor="middle">${count}</text></g></g>`;
+  const nodeSvg = diagram.nodes.map((item) => {
+    const size = nodeSize(item);
+    const stateItem = item.stateCode ? stateByCode(item.stateCode) : null;
+    const interactive = Boolean(stateItem);
+    const className = `flow-node-svg journey-node ${item.kind}${stateItem?.terminal ? " terminal" : ""}`;
+    const attributes = interactive ? `data-flow-state="${esc(item.stateCode)}" role="button" tabindex="0"` : `aria-hidden="true"`;
+    const body = item.kind === "decision"
+      ? `<polygon class="node-body" points="${size.width / 2},0 ${size.width},${size.height / 2} ${size.width / 2},${size.height} 0,${size.height / 2}"></polygon>`
+      : item.kind === "task"
+        ? `<polygon class="node-body" points="16,0 ${size.width - 16},0 ${size.width},${size.height / 2} ${size.width - 16},${size.height} 16,${size.height} 0,${size.height / 2}"></polygon>`
+        : `<rect class="node-body" width="${size.width}" height="${size.height}" rx="${["success", "failure", "invalid"].includes(item.kind) ? size.height / 2 : 8}"></rect>`;
+    return `<g class="${className}" ${attributes} transform="translate(${item.x} ${item.y})">${body}<text class="node-title" x="${size.width / 2}" y="${size.height / 2 - 3}" text-anchor="middle">${esc(item.label)}</text><text class="node-stage" x="${size.width / 2}" y="${size.height / 2 + 15}" text-anchor="middle">${esc(item.subtitle || "")}</text></g>`;
   }).join("");
   $("flowBoard").style.gridTemplateColumns = "none";
-  $("flowBoard").innerHTML = `<svg class="transition-svg" viewBox="0 0 ${canvasWidth} ${canvasHeight}" width="${canvasWidth}" height="${canvasHeight}" aria-label="北汽线索状态流转图"><defs><marker id="flowArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 z"></path></marker><filter id="flowShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#152136" flood-opacity=".12"></feDropShadow></filter></defs>${edgeSvg}${nodeSvg}</svg>`;
+  $("flowBoard").innerHTML = `<svg class="transition-svg" viewBox="0 0 ${diagram.width} ${diagram.height}" width="${diagram.width}" height="${diagram.height}" aria-label="北汽普通线索状态与任务流转图"><defs><marker id="flowArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L8,4 L0,8 z"></path></marker><filter id="flowShadow" x="-20%" y="-20%" width="140%" height="150%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#152136" flood-opacity=".12"></feDropShadow></filter></defs>${edgeSvg}${nodeSvg}</svg>`;
   showFlowDetail($("flowDetail").dataset.state && stateByCode($("flowDetail").dataset.state) ? $("flowDetail").dataset.state : "issued");
 }
 function showFlowDetail(code) {
@@ -206,7 +221,7 @@ function showFlowDetail(code) {
   $("flowDetail").innerHTML = `<header><div><span class="detail-color" style="background:${item.color}"></span><strong>${esc(item.name)}</strong><code>${esc(item.code)}</code></div><small>${esc(item.businessStage || groupLabels[item.group] || item.group)} · 层级 ${item.level}${item.terminal ? " · 终态" : ""}</small></header><div class="flow-detail-grid"><section><h3>进入该节点 <span>${incoming.length}</span></h3><ul>${incoming.map((flow) => line(flow, true)).join("") || "<li class='no-rule'>无进入规则</li>"}</ul></section><section><h3>离开该节点 <span>${outgoing.length}</span></h3><ul>${outgoing.map((flow) => line(flow, false)).join("") || "<li class='no-rule'>无离开规则</li>"}</ul></section></div>`;
 }
 function renderTransitions() {
-  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderResultRows(); renderStrategyFilter(); renderStrategyRows(); renderFlowBoard();
+  renderTransitionSummary(); renderStateTree(); renderStateRows(); renderResultRows(); renderStrategyFilter(); renderStrategyRows(); renderProgressStateRows(); renderFlowBoard();
   $("transitionJson").textContent = JSON.stringify(state.transitionConfig, null, 2);
 }
 function switchConfigTab(tab) {
@@ -242,7 +257,9 @@ function openTransitionModal(mode, key = null) {
     const salesResults = config.results.filter((item) => item.actor !== "system").sort((a, b) => a.sortOrder - b.sortOrder).map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}${item.enabled === false ? "（已停用）" : ""}</option>`).join("");
     const systemEvents = config.results.filter((item) => item.actor === "system").map((item) => `<option value="${esc(item.code)}" ${flow?.result === item.code ? "selected" : ""}>${esc(item.name)}</option>`).join("");
     const results = `<optgroup label="销售跟进结果">${salesResults}</optgroup><optgroup label="系统事件">${systemEvents}</optgroup>`;
-    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前状态 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 / 系统事件 *</span><select id="modalFlowResult">${results}</select></label><label><span>转换到 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>后续任务</span><select id="modalFlowTask"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option><option value="FIRST_CONTACT" ${flow?.task === "FIRST_CONTACT" ? "selected" : ""}>首次联系</option><option value="CALLBACK" ${flow?.task === "CALLBACK" ? "selected" : ""}>普通回访</option></select></label><label><span>默认截止时间</span><input id="modalFlowDeadline" value="${esc(flow?.deadline || "—")}"></label></div><div class="result-source-note"><strong>推进信息独立更新</strong><span>试驾、到店、成交由销售在工作台中分别更新，不绑定在单条跟进策略上。</span></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>该状态下原因必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
+    const qualityOptions = (config.qualityOptions || []).map((item) => `<option value="${esc(item.code)}" ${flow?.qualityUpdate === item.code ? "selected" : ""}>${esc(item.name)}</option>`).join("");
+    const taskRules = state.taskRules.filter((item) => item.enabled !== false).map((item) => `<option value="${esc(item.id)}" ${flow?.taskRuleId === item.id ? "selected" : ""}>${esc(item.type)}｜${esc(item.trigger)}｜${esc(item.deadline)}</option>`).join("");
+    $("transitionModalBody").innerHTML = `<div class="modal-form-grid"><label><span>当前状态 *</span><select id="modalFlowCurrent">${stateOptions(flow?.current)}</select></label><label><span>跟进结果 / 系统事件 *</span><select id="modalFlowResult">${results}</select></label><label><span>转换到 *</span><select id="modalFlowNext">${stateOptions(flow?.next)}</select></label><label><span>更新线索有效性 *</span><select id="modalFlowQuality">${qualityOptions}</select></label><label class="modal-wide"><span>后续任务规则</span><select id="modalFlowTaskRule"><option value="" ${!flow?.task ? "selected" : ""}>不生成任务</option>${taskRules}</select></label></div><div class="result-source-note"><strong>跟进结果不是状态</strong><span>保存的是“当前状态 + 跟进结果 → 新状态 + 有效性 + 后续任务”。任务类型、触发说明和截止时间读取所选任务规则。</span></div><div class="modal-checks"><label><input id="modalFlowUnreachable" type="checkbox" ${flow?.unreachable ? "checked" : ""}>未接通次数 +1</label><label><input id="modalFlowReason" type="checkbox" ${flow?.reason ? "checked" : ""}>该状态下原因必填</label><label><input id="modalFlowRetry" type="checkbox" ${flow?.retry ? "checked" : ""}>生成重试任务</label><label><input id="modalFlowReactivation" type="checkbox" ${flow?.reactivation ? "checked" : ""}>到期生成回捞任务</label></div>`;
   }
   $("transitionModal").hidden = false;
   document.body.classList.add("modal-open");
@@ -282,7 +299,10 @@ function saveFlowFromModal() {
   if (!result) return toast("请先选择跟进结果或系统事件");
   const current = $("modalFlowCurrent").value;
   if (config.flows.some((item) => item.current === current && item.result === result && item.id !== Number(editingKey))) return toast("该节点与跟进结果的组合已存在");
-  const flow = { id: editingKey === null ? Math.max(0, ...config.flows.map((item) => item.id)) + 1 : Number(editingKey), current, result, next: $("modalFlowNext").value, setTags: [], fieldUpdates: {}, unreachable: $("modalFlowUnreachable").checked, reason: $("modalFlowReason").checked, task: $("modalFlowTask").value || null, deadline: $("modalFlowDeadline").value.trim() || "—", retry: $("modalFlowRetry").checked, reactivation: $("modalFlowReactivation").checked };
+  const taskRuleId = $("modalFlowTaskRule").value || null;
+  const taskRule = state.taskRules.find((item) => item.id === taskRuleId);
+  const taskGroup = taskRule ? (taskRule.group || (taskRule.type.includes("首次联系") ? "FIRST_CONTACT" : "CALLBACK")) : null;
+  const flow = { id: editingKey === null ? Math.max(0, ...config.flows.map((item) => item.id)) + 1 : Number(editingKey), current, result, next: $("modalFlowNext").value, qualityUpdate: $("modalFlowQuality").value, setTags: [], fieldUpdates: {}, unreachable: $("modalFlowUnreachable").checked, reason: $("modalFlowReason").checked, task: taskGroup, taskRuleId, deadline: taskRule?.deadline || "—", retry: $("modalFlowRetry").checked, reactivation: $("modalFlowReactivation").checked };
   if (editingKey === null) config.flows.push(flow); else Object.assign(config.flows.find((item) => item.id === Number(editingKey)), flow);
   markDirty(); closeTransitionModal(); renderTransitions(); switchConfigTab("strategies"); toast("跟进策略已更新，保存后生效");
 }
@@ -303,9 +323,9 @@ function deleteResult(code) {
   markDirty(); renderTransitions(); switchConfigTab("results"); toast("跟进结果已删除，保存后生效");
 }
 function validateTransitions() {
-  const states = new Set(state.transitionConfig.states.map((item) => item.code)); const results = new Set(state.transitionConfig.results.map((item) => item.code)); const tags = new Set((state.transitionConfig.leadTags || []).map((item) => item.code)); const combinations = new Set(); const errors = [];
+  const states = new Set(state.transitionConfig.states.map((item) => item.code)); const results = new Set(state.transitionConfig.results.map((item) => item.code)); const tags = new Set((state.transitionConfig.leadTags || []).map((item) => item.code)); const qualities = new Set((state.transitionConfig.qualityOptions || []).map((item) => item.code)); const taskRules = new Set(state.taskRules.map((item) => item.id)); const combinations = new Set(); const errors = [];
   state.transitionConfig.states.forEach((item) => { if (item.parent && !states.has(item.parent)) errors.push(`${item.name} 的父节点不存在`); });
-  state.transitionConfig.flows.forEach((flow) => { if (!states.has(flow.current) || !states.has(flow.next)) errors.push(`规则 ${flow.id} 引用了不存在的节点`); if (!results.has(flow.result)) errors.push(`规则 ${flow.id} 引用了不存在的跟进结果`); (flow.setTags || []).forEach((tag) => { if (!tags.has(tag)) errors.push(`规则 ${flow.id} 引用了不存在的线索标签`); }); const key = `${flow.current}:${flow.result}`; if (combinations.has(key)) errors.push(`${stateName(flow.current)} + ${resultName(flow.result)} 存在重复规则`); combinations.add(key); });
+  state.transitionConfig.flows.forEach((flow) => { if (!states.has(flow.current) || !states.has(flow.next)) errors.push(`规则 ${flow.id} 引用了不存在的节点`); if (!results.has(flow.result)) errors.push(`规则 ${flow.id} 引用了不存在的跟进结果`); if (!qualities.has(flow.qualityUpdate)) errors.push(`规则 ${flow.id} 未配置有效性更新`); if (flow.task && !taskRules.has(flow.taskRuleId)) errors.push(`规则 ${flow.id} 未绑定有效的任务规则`); (flow.setTags || []).forEach((tag) => { if (!tags.has(tag)) errors.push(`规则 ${flow.id} 引用了不存在的线索标签`); }); const key = `${flow.current}:${flow.result}`; if (combinations.has(key)) errors.push(`${stateName(flow.current)} + ${resultName(flow.result)} 存在重复规则`); combinations.add(key); });
   return errors;
 }
 
@@ -320,8 +340,8 @@ qsa(".cancel-inline").forEach((button) => button.addEventListener("click", () =>
 $("accountForm").addEventListener("submit", (event) => { event.preventDefault(); const id = $("accountId").value.trim(); if (state.accounts.some((account) => account.id === id)) return toast("账号ID已存在，请使用新的ID"); const role = $("accountRole").value; state.accounts.unshift({ id, username: $("accountName").value.trim(), role, dataScope: role === "tenant_admin" ? "北汽全部线索" : "本人负责线索", status: "启用", lastLogin: "尚未登录" }); persist(); renderAccounts(); event.target.reset(); event.target.hidden = true; toast("北汽账号已创建"); });
 $("accountRows").addEventListener("change", (event) => { const index = Number(event.target.dataset.index); if (event.target.classList.contains("account-role")) { state.accounts[index].role = event.target.value; state.accounts[index].dataScope = event.target.value === "tenant_admin" ? "北汽全部线索" : "本人负责线索"; } if (event.target.classList.contains("account-status")) state.accounts[index].status = event.target.value; persist(); renderAccounts(); toast("账号配置已更新"); });
 $("savePermissions").addEventListener("click", () => { state.permissions = {}; qsa(".permission-list input:checked").forEach((input) => { if (!state.permissions[input.dataset.role]) state.permissions[input.dataset.role] = []; state.permissions[input.dataset.role].push(input.value); }); persist(); toast("角色权限已保存"); });
-$("taskForm").addEventListener("submit", (event) => { event.preventDefault(); state.taskRules.push({ id: `RULE-${Date.now()}`, type: $("taskType").value.trim(), trigger: $("taskTriggerInput").value.trim(), deadline: $("taskDeadline").value.trim(), assignee: "原销售", enabled: true }); renderTaskRules(); event.target.reset(); event.target.hidden = true; toast("任务规则已添加，保存后生效"); });
-$("taskRuleList").addEventListener("input", (event) => { const index = Number(event.target.dataset.taskIndex); if (Number.isNaN(index)) return; state.taskRules[index][event.target.dataset.field] = event.target.type === "checkbox" ? event.target.checked : event.target.value; $("taskSaveHint").textContent = "有未保存的任务配置"; });
+$("taskForm").addEventListener("submit", (event) => { event.preventDefault(); const type = $("taskType").value.trim(); state.taskRules.push({ id: `RULE-${Date.now()}`, group: type.includes("首次联系") ? "FIRST_CONTACT" : "CALLBACK", type, trigger: $("taskTriggerInput").value.trim(), deadline: $("taskDeadline").value.trim(), assignee: "原销售", enabled: true }); renderTaskRules(); event.target.reset(); event.target.hidden = true; toast("任务规则已添加，保存后生效"); });
+$("taskRuleList").addEventListener("input", (event) => { const index = Number(event.target.dataset.taskIndex); if (Number.isNaN(index)) return; state.taskRules[index][event.target.dataset.field] = event.target.type === "checkbox" ? event.target.checked : event.target.value; if (event.target.dataset.field === "type") state.taskRules[index].group = event.target.value.includes("首次联系") ? "FIRST_CONTACT" : "CALLBACK"; $("taskSaveHint").textContent = "有未保存的任务配置"; });
 $("saveTaskRules").addEventListener("click", () => { persist(); $("taskSaveHint").textContent = "配置已保存，将应用到新生成的任务"; toast("任务配置已保存"); });
 
 qsa(".config-tab").forEach((button) => button.addEventListener("click", () => switchConfigTab(button.dataset.configTab)));

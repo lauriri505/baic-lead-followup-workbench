@@ -33,7 +33,7 @@
           </div>
           <div class="prospect-progress-row" id="prospectProgressRow" hidden>
             <div class="prospect-progress-heading"><strong data-i18n="prospect.title">客户推进信息</strong><span data-i18n="prospect.description">三个字段独立累计，用于筛选和统计</span></div>
-            <dl class="prospect-progress-grid"><div><dt data-i18n="prospect.trial">是否试驾</dt><dd id="trialStatus">未标记</dd></div><div><dt data-i18n="prospect.visit">是否到店</dt><dd id="visitStatus">未标记</dd></div><div><dt data-i18n="prospect.deal">是否成交</dt><dd id="dealStatus">未标记</dd></div></dl>
+            <dl class="prospect-progress-grid"><div><dt data-i18n="prospect.trial">是否预约试驾</dt><dd id="trialStatus">未标记</dd></div><div><dt data-i18n="prospect.visit">是否到店</dt><dd id="visitStatus">未标记</dd></div><div><dt data-i18n="prospect.deal">是否成交</dt><dd id="dealStatus">未标记</dd></div></dl>
           </div>
           <div class="order-status-row"><div><span class="order-status-label" data-i18n="order.label">订单状态</span><strong class="order-status-badge" id="orderStatusBadge">未标记</strong><small id="orderStatusMeta">尚未人工标记</small></div><button class="button secondary compact" id="orderStatusButton" type="button" data-i18n="order.update">更新状态</button></div>
         </section>
@@ -43,7 +43,7 @@
           <div class="current-state"><span data-i18n="follow.currentState">当前状态</span><strong id="currentState">未跟进 · 正常等待跟进</strong><span class="attempt-count" id="attemptCount">未接通 0 次</span></div>
           <fieldset class="result-fieldset"><legend><span data-i18n="follow.result">跟进结果</span> <span>*</span></legend><div class="result-list" id="resultList"></div></fieldset>
           <section class="progress-update-panel" aria-labelledby="progressUpdateTitle">
-            <div class="progress-update-heading"><div><h3 id="progressUpdateTitle" data-i18n="progressUpdate.title">本次同步更新</h3><p data-i18n="progressUpdate.description">试驾、到店、成交可同时更新；不选择则保持当前值</p></div><span data-i18n="progressUpdate.optional">选填</span></div>
+            <div class="progress-update-heading"><div><h3 id="progressUpdateTitle" data-i18n="progressUpdate.title">本次同步更新</h3><p data-i18n="progressUpdate.description">预约试驾、到店、成交可同时更新；不选择则保持当前值</p></div><span data-i18n="progressUpdate.optional">选填</span></div>
             <div class="progress-update-grid" id="progressUpdateGrid"></div>
           </section>
           <div class="dynamic-fields" id="dynamicFields">
@@ -114,6 +114,6 @@
     </form>
   </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260901-4"></script><script src="data.js?v=20260901-4"></script><script src="app.js?v=20260901-4"></script>
+  <script src="admin-data.js?v=20260901-6"></script><script src="data.js?v=20260901-6"></script><script src="app.js?v=20260901-6"></script>
 </body>
 </html>

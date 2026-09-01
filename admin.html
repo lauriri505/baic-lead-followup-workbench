@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="北汽 CRM 管理员后台演示">
   <title>北汽管理员后台</title>
-  <link rel="stylesheet" href="admin.css?v=20260901-4">
+  <link rel="stylesheet" href="admin.css?v=20260901-5">
 </head>
 <body>
   <div class="admin-app">
@@ -37,12 +37,12 @@
             <section class="admin-panel"><div class="panel-title"><div><h2>线索阶段分布</h2><p>当前北汽线索池</p></div><button class="text-action" data-go="leads" type="button">查看全部</button></div><div class="stage-bars" id="stageBars"></div></section>
             <section class="admin-panel"><div class="panel-title"><div><h2>今日任务概况</h2><p>按任务状态统计</p></div><button class="text-action" data-go="tasks" type="button">配置规则</button></div><div class="task-summary" id="taskSummary"></div></section>
           </div>
-          <section class="admin-panel recent-panel"><div class="panel-title"><div><h2>最新北汽线索</h2><p>按创建时间倒序</p></div></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>线索状态</th><th>负责人</th><th>当前任务</th><th>创建时间</th></tr></thead><tbody id="recentLeadRows"></tbody></table></div></section>
+          <section class="admin-panel recent-panel"><div class="panel-title"><div><h2>最新北汽线索</h2><p>按创建时间倒序</p></div></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>线索状态</th><th>有效性</th><th>负责人</th><th>当前任务</th><th>创建时间</th></tr></thead><tbody id="recentLeadRows"></tbody></table></div></section>
         </section>
 
         <section class="admin-view" id="leadsView" hidden>
           <div class="view-heading"><div><p class="eyebrow">LEAD DATA</p><h1>北汽线索数据</h1><p>管理员只能查看当前租户的 BAIC 品牌线索。</p></div><span class="scope-chip">共 <strong id="leadTotal">0</strong> 条</span></div>
-          <section class="admin-panel"><div class="filter-row"><input id="leadSearch" type="search" placeholder="搜索线索ID、姓名或手机号"><select id="leadStatusFilter"><option value="">全部线索状态</option></select><select id="leadAssigneeFilter"><option value="">全部负责人</option></select><button class="secondary-button" id="resetLeadFilters" type="button">重置</button></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>状态</th><th>负责人</th><th>任务状态</th><th>创建时间</th></tr></thead><tbody id="leadRows"></tbody></table></div><div class="empty-state" id="leadEmpty" hidden>没有符合条件的北汽线索</div></section>
+          <section class="admin-panel"><div class="filter-row"><input id="leadSearch" type="search" placeholder="搜索线索ID、姓名或手机号"><select id="leadStatusFilter"><option value="">全部线索状态</option></select><select id="leadAssigneeFilter"><option value="">全部负责人</option></select><button class="secondary-button" id="resetLeadFilters" type="button">重置</button></div><div class="table-wrap"><table><thead><tr><th>线索ID</th><th>用户</th><th>来源</th><th>车型</th><th>状态</th><th>有效性</th><th>负责人</th><th>任务状态</th><th>创建时间</th></tr></thead><tbody id="leadRows"></tbody></table></div><div class="empty-state" id="leadEmpty" hidden>没有符合条件的北汽线索</div></section>
         </section>
 
         <section class="admin-view" id="accountsView" hidden>
@@ -53,7 +53,7 @@
         </section>
 
         <section class="admin-view" id="tasksView" hidden>
-          <div class="view-heading"><div><p class="eyebrow">TASK RULES</p><h1>任务配置</h1><p>定义业务事件触发哪类销售任务，以及默认完成时限。</p></div><button class="primary-button" id="showTaskForm" type="button">+ 新增任务规则</button></div>
+          <div class="view-heading"><div><p class="eyebrow">TASK RULES</p><h1>任务配置</h1><p>任务业务组只保留“首次联系”和“普通回访”；不同触发场景可以分别配置完成时限。</p></div><button class="primary-button" id="showTaskForm" type="button">+ 新增任务规则</button></div>
           <div class="rule-note"><strong>规则优先级</strong><span>销售手动时间 ＞ 北汽任务规则 ＞ 平台默认规则</span></div>
           <form class="inline-create admin-panel" id="taskForm" hidden><div><label for="taskType">任务类型</label><input id="taskType" required placeholder="例如：普通回访"></div><div><label for="taskTriggerInput">触发事件</label><input id="taskTriggerInput" required placeholder="例如：首次联系未接通"></div><div><label for="taskDeadline">默认截止时间</label><input id="taskDeadline" required placeholder="例如：+2小时"></div><button class="primary-button" type="submit">添加规则</button><button class="secondary-button cancel-inline" type="button">取消</button></form>
           <div class="task-rule-list" id="taskRuleList"></div>
@@ -74,14 +74,14 @@
 
             <div class="config-pane active" id="configStatesPane">
               <div class="config-toolbar"><div><h2>主状态与子状态</h2><p>销售筛选使用四个主状态，子状态用于说明当前具体结果。</p></div><button class="primary-button" id="showStateForm" type="button">+ 添加状态</button></div>
-              <div class="lead-tag-panel"><div><strong>客户推进字段</strong><small>试驾、到店、成交独立累计记录，更新一个字段不会覆盖其他字段</small></div><div class="lead-tag-list" id="leadTagList"></div></div>
+              <div class="lead-tag-panel"><div><strong>有效性与客户推进字段</strong><small>有效性用于质量统计；预约试驾、到店、成交用于描述潜客推进阶段</small></div><div class="lead-tag-list" id="leadTagList"></div></div>
               <div class="state-tree" id="stateTree"></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>主状态</th><th>子状态</th><th>状态编码</th><th>状态性质</th><th>父节点</th><th>操作</th></tr></thead><tbody id="stateRows"></tbody></table></div>
             </div>
 
             <div class="config-pane" id="configResultsPane" hidden>
-              <div class="config-toolbar"><div><h2>销售跟进结果</h2><p>配置销售在工作台“本次跟进”中可以选择的结果；试驾、到店、成交属于独立推进字段，不在这里配置。</p></div><button class="primary-button" id="showResultForm" type="button">+ 添加跟进结果</button></div>
-              <div class="result-source-note"><strong>取值规则</strong><span>工作台按照“当前线索节点 → 跟进策略 → 已启用销售结果”读取，不展示系统事件。</span></div>
+              <div class="config-toolbar"><div><h2>销售跟进结果</h2><p>配置销售对本次联系事实的判断；跟进结果是流转条件，不等于下一个状态节点。</p></div><button class="primary-button" id="showResultForm" type="button">+ 添加跟进结果</button></div>
+              <div class="result-source-note"><strong>关系说明</strong><span>当前状态 + 跟进结果 → 新状态 + 有效性 + 下一任务。预约试驾、到店、成交仍为可同时更新的推进字段。</span></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>顺序</th><th>结果名称</th><th>结果编码</th><th>结果分类</th><th>填写要求</th><th>已配置节点</th><th>状态</th><th>操作</th></tr></thead><tbody id="resultRows"></tbody></table></div>
             </div>
 
@@ -89,6 +89,7 @@
               <div class="config-toolbar"><div><h2>跟进策略</h2><p>当前节点 + 跟进结果 → 新节点 + 后续任务。</p></div><button class="primary-button" id="showStrategyForm" type="button">+ 添加策略</button></div>
               <div class="strategy-filter"><select id="strategyStateFilter"><option value="">全部当前节点</option></select><span id="strategyCount"></span></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>当前节点</th><th>跟进结果</th><th>流转至</th><th>附加更新</th><th>后续任务</th><th>截止规则</th><th>操作</th></tr></thead><tbody id="strategyRows"></tbody></table></div>
+              <section class="progress-rule-panel"><div><h3>客户推进节点判定</h3><p>销售可在一次跟进中同时更新多个推进字段，系统按优先级取最深阶段作为当前节点。</p></div><div class="table-wrap transition-table"><table><thead><tr><th>优先级</th><th>推进字段</th><th>取值</th><th>附加条件</th><th>判定节点</th></tr></thead><tbody id="progressStateRows"></tbody></table></div></section>
             </div>
 
             <div class="config-pane" id="configDiagramPane" hidden>
@@ -115,7 +116,7 @@
     </div>
   </div>
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260901-4"></script>
-  <script src="admin.js?v=20260901-4"></script>
+  <script src="admin-data.js?v=20260901-6"></script>
+  <script src="admin.js?v=20260901-6"></script>
 </body>
 </html>
