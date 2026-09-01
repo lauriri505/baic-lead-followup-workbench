@@ -1,4 +1,4 @@
-const storageKey = "baic_admin_demo_config_v4";
+const storageKey = "baic_admin_demo_config_v5";
 const sourceData = window.BAIC_ADMIN_DATA;
 const copy = (value) => JSON.parse(JSON.stringify(value));
 let state = (() => {
@@ -85,7 +85,9 @@ function markDirty() { $("transitionSaveHint").textContent = "有未保存的线
 
 function renderTransitionSummary() {
   const config = state.transitionConfig;
-  const values = [["状态节点", config.states.length, `${config.states.filter((item) => item.terminal).length} 个终态`], ["线索标签", (config.leadTags || []).length, "不参与状态流转"], ["跟进结果", config.results.length, "销售工作台可选动作"], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
+  const salesResults = config.results.filter((item) => item.actor !== "system");
+  const systemEvents = config.results.filter((item) => item.actor === "system");
+  const values = [["状态节点", config.states.length, `${config.states.filter((item) => item.terminal).length} 个终态`], ["线索标签", (config.leadTags || []).length, "不参与状态流转"], ["销售跟进结果", salesResults.length, `${systemEvents.length} 个系统事件已分离`], ["流转规则", config.flows.length, "状态 + 结果的组合"], ["配置版本", config.brand.version, config.brand.status]];
   $("transitionSummary").innerHTML = values.map(([label, value, note]) => `<article><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`).join("");
 }
 function renderStateTree() {
@@ -112,8 +114,10 @@ function renderStrategyRows() {
     const result = resultByCode(flow.result);
     const progressLabels = { trialStatus: "是否试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
     const fieldUpdates = Object.entries(flow.fieldUpdates || {}).map(([field, value]) => `${progressLabels[field] || field}：${value === "YES" ? "是" : "否"}`);
-    const updates = [...(flow.setTags || []).map((code) => `标签：${tagByCode(code)?.name || code}`), ...fieldUpdates, flow.unreachable ? "未接通次数 +1" : "", flow.reason || result?.requiresReason ? "原因必填" : "", result?.requiresCallbackTime ? "时间必填" : "", flow.retry ? "生成重试" : "", flow.reactivation ? "到期回捞" : ""].filter(Boolean);
-    return `<tr><td><strong>${esc(stateName(flow.current))}</strong><small class="table-code">${esc(flow.current)}</small></td><td><strong>${esc(resultName(flow.result))}</strong><small class="table-code">${categoryLabels[result?.category] || result?.category || "—"}</small></td><td><span class="flow-direction">→</span><strong>${esc(stateName(flow.next))}</strong>${flow.current === flow.next ? `<small class="self-loop">状态保持</small>` : ""}</td><td><div class="update-tags">${updates.length ? updates.map((item) => `<span>${item}</span>`).join("") : "<span>无</span>"}</div></td><td>${flow.task ? `<strong>${taskLabels[flow.task] || esc(flow.task)}</strong><small class="table-code">${esc(flow.task)}</small>` : "不生成任务"}</td><td>${esc(flow.deadline || "—")}</td><td><div class="row-actions"><button data-edit-flow="${flow.id}" type="button">编辑</button><button class="danger-text" data-delete-flow="${flow.id}" type="button">删除</button></div></td></tr>`;
+    const limitUpdate = flow.terminalAt ? `累计${flow.terminalAt}次 → ${stateName(flow.terminalNext)}` : "";
+    const updates = [...(flow.setTags || []).map((code) => `标签：${tagByCode(code)?.name || code}`), ...fieldUpdates, flow.unreachable ? "未接通次数 +1" : "", limitUpdate, flow.reason || result?.requiresReason ? "原因必填" : "", result?.requiresCallbackTime ? "时间必填" : "", flow.retry ? "生成重试" : "", flow.reactivation ? "到期回捞" : ""].filter(Boolean);
+    const resultSource = result?.actor === "system" ? "系统事件" : "销售结果";
+    return `<tr><td><strong>${esc(stateName(flow.current))}</strong><small class="table-code">${esc(flow.current)}</small></td><td><strong>${esc(resultName(flow.result))}</strong><small class="table-code">${resultSource} · ${categoryLabels[result?.category] || result?.category || "—"}</small></td><td><span class="flow-direction">→</span><strong>${esc(stateName(flow.next))}</strong>${flow.current === flow.next ? `<small class="self-loop">状态保持</small>` : ""}</td><td><div class="update-tags">${updates.length ? updates.map((item) => `<span>${item}</span>`).join("") : "<span>无</span>"}</div></td><td>${flow.task ? `<strong>${taskLabels[flow.task] || esc(flow.task)}</strong><small class="table-code">${esc(flow.task)}</small>` : "不生成任务"}</td><td>${esc(flow.deadline || "—")}</td><td><div class="row-actions"><button data-edit-flow="${flow.id}" type="button">编辑</button><button class="danger-text" data-delete-flow="${flow.id}" type="button">删除</button></div></td></tr>`;
   }).join("") || `<tr><td colspan="7" class="empty-cell">当前筛选条件下没有流转规则</td></tr>`;
 }
 function renderFlowBoard() {
@@ -239,7 +243,7 @@ function saveFlowFromModal() {
     result = $("modalResultCode").value.trim(); const name = $("modalResultName").value.trim();
     if (!result || !name) return toast("请填写新跟进结果的编码和名称");
     if (resultByCode(result)) return toast("跟进结果编码已存在");
-    config.results.push({ code: result, name, category: $("modalResultCategory").value, requiresCallbackTime: $("modalFlowCallback").checked, requiresReason: $("modalFlowReason").checked });
+    config.results.push({ code: result, name, actor: "sales", category: $("modalResultCategory").value, requiresCallbackTime: $("modalFlowCallback").checked, requiresReason: $("modalFlowReason").checked });
   } else {
     resultByCode(result).requiresCallbackTime = $("modalFlowCallback").checked;
     resultByCode(result).requiresReason = $("modalFlowReason").checked;

@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v4";
+const adminStorageKey = "baic_admin_demo_config_v5";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -122,7 +122,7 @@ const legacyStateCodes = {
   lost: "prospect_lost"
 };
 
-const systemOnlyResults = new Set(["assigned", "timeout"]);
+const systemOnlyResults = new Set(["assigned", "timeout", "first_contact", "lost"]);
 const taskRuleIds = { FIRST_CONTACT: "RULE-FIRST", CALLBACK: "RULE-RETRY" };
 const fallbackTaskLabels = { FIRST_CONTACT: "首次联系", CALLBACK: "普通回访" };
 const progressFieldLabels = { trialStatus: "是否试驾", visitStatus: "是否到店", dealStatus: "是否成交" };
@@ -171,7 +171,7 @@ const orderStatusDataLabels = {
 };
 
 function flowsForLead(lead) {
-  return transitionConfig.flows.filter((flow) => flow.current === leadStateCode(lead) && !systemOnlyResults.has(flow.result));
+  return transitionConfig.flows.filter((flow) => flow.current === leadStateCode(lead) && configuredResult(flow.result)?.actor !== "system" && !systemOnlyResults.has(flow.result));
 }
 
 function stateLabel(code) {
@@ -188,11 +188,18 @@ function tagNames(codes = []) {
   return codes.map((code) => configuredTag(code)?.name || code);
 }
 
-function resultActionFor(flow) {
-  const labels = tagNames(flow.setTags || []);
-  const action = "流转至 " + stateLabel(flow.next);
+function resultActionFor(flow, transition) {
+  const labels = tagNames(transition?.tags || flow.setTags || []);
+  const nextState = transition?.stateCode || flow.next;
+  const action = "流转至 " + stateLabel(nextState);
   const fieldText = Object.entries(flow.fieldUpdates || {}).map(([field, value]) => `${progressFieldLabels[field] || field}=${value === "YES" ? "是" : "否"}`);
-  return [action, labels.length ? "标记为" + labels.join("、") : "", ...fieldText].filter(Boolean).join("；");
+  const limitReached = Boolean(flow.terminalAt && nextState === flow.terminalNext);
+  const limitText = flow.terminalAt
+    ? (limitReached
+      ? `已达${flow.terminalAt}次未接通上限`
+      : `累计第${flow.terminalAt}次自动转${stateLabel(flow.terminalNext)}`)
+    : "";
+  return [action, labels.length ? "标记为" + labels.join("、") : "", limitText, ...fieldText].filter(Boolean).join("；");
 }
 
 function demoNow() {
@@ -247,22 +254,25 @@ function deadlineInputValue(deadline) {
 function getTransition(lead, code) {
   const flow = transitionConfig.flows.find((item) => item.current === leadStateCode(lead) && item.result === code);
   if (!flow) return null;
-  const nextState = configuredState(flow.next);
-  const taskInfo = taskInfoForFlow(flow);
+  const nextCount = flow.unreachable ? lead.unreachableCount + 1 : lead.unreachableCount;
+  const limitReached = Boolean(flow.terminalAt && nextCount >= flow.terminalAt);
+  const effectiveFlow = limitReached ? { ...flow, next: flow.terminalNext, setTags: flow.terminalTags || flow.setTags, task: null, deadline: "—" } : flow;
+  const nextState = configuredState(effectiveFlow.next);
+  const taskInfo = taskInfoForFlow(effectiveFlow);
   return {
-    flow,
-    stateCode: flow.next,
+    flow: effectiveFlow,
+    stateCode: effectiveFlow.next,
     terminal: Boolean(nextState?.terminal),
     noNextTask: !taskInfo,
-    reasonRequired: Boolean(flow.reason || configuredResult(code)?.requiresReason),
+    reasonRequired: Boolean(effectiveFlow.reason || configuredResult(code)?.requiresReason),
     task: taskInfo?.name,
     taskCode: taskInfo?.code,
     trigger: taskInfo?.trigger,
-    deadline: taskInfo?.deadline || flow.deadline || "—",
+    deadline: taskInfo?.deadline || effectiveFlow.deadline || "—",
     time: taskInfo ? deadlineInputValue(taskInfo.deadline) : "",
-    tags: flow.setTags || lead.leadTags || [],
-    fieldUpdates: flow.fieldUpdates || {},
-    nextCount: flow.unreachable ? lead.unreachableCount + 1 : lead.unreachableCount
+    tags: effectiveFlow.setTags || lead.leadTags || [],
+    fieldUpdates: effectiveFlow.fieldUpdates || {},
+    nextCount
   };
 }
 
@@ -426,15 +436,15 @@ function renderResults() {
   const flows = flowsForLead(lead);
   flows.forEach((flow) => {
     const code = flow.result;
-    const taskInfo = taskInfoForFlow(flow);
+    const transition = getTransition(lead, code);
     const label = el("label", "result-option");
     const radio = el("input");
     radio.type = "radio";
     radio.name = "followResult";
     radio.value = code;
     const copy = el("span", "result-copy");
-    copy.append(el("strong", "", resultLabelFor(code)), el("small", "", resultActionFor(flow)));
-    label.append(radio, copy, el("span", "result-deadline", taskInfo ? taskInfo.name + " · " + taskInfo.deadline : "不生成后续任务"));
+    copy.append(el("strong", "", resultLabelFor(code)), el("small", "", resultActionFor(flow, transition)));
+    label.append(radio, copy, el("span", "result-deadline", transition && !transition.noNextTask ? transition.task + " · " + transition.deadline : "不生成后续任务"));
     radio.addEventListener("change", () => selectResult(code, label));
     list.appendChild(label);
   });
