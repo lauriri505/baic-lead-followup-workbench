@@ -50,13 +50,7 @@ window.BAIC_ADMIN_DATA = {
       { code: "clear_reject", name: "明确拒绝", actor: "sales", enabled: true, sortOrder: 20, category: "lost", requiresCallbackTime: false, requiresReason: true },
       { code: "bought_other", name: "已购买其他品牌", actor: "sales", enabled: true, sortOrder: 30, category: "lost", requiresCallbackTime: false, requiresReason: true },
       { code: "unreachable", name: "未接通", actor: "sales", enabled: true, sortOrder: 40, category: "unreachable", requiresCallbackTime: false, requiresReason: false },
-      { code: "invalid_number", name: "号码错误", actor: "sales", enabled: true, sortOrder: 50, category: "lost", requiresCallbackTime: false, requiresReason: true },
-      { code: "trial_yes", name: "试驾：是", actor: "sales", enabled: true, sortOrder: 60, category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "trial_no", name: "试驾：否", actor: "sales", enabled: true, sortOrder: 70, category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "visit_yes", name: "到店：是", actor: "sales", enabled: true, sortOrder: 80, category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "visit_no", name: "到店：否", actor: "sales", enabled: true, sortOrder: 90, category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "deal_yes", name: "成交：是", actor: "sales", enabled: true, sortOrder: 100, category: "contact", requiresCallbackTime: false, requiresReason: false },
-      { code: "deal_no", name: "成交：否", actor: "sales", enabled: true, sortOrder: 110, category: "contact", requiresCallbackTime: false, requiresReason: false }
+      { code: "invalid_number", name: "号码错误", actor: "sales", enabled: true, sortOrder: 50, category: "lost", requiresCallbackTime: false, requiresReason: true }
     ],
     flows: [
       { id: 1, current: "issued", result: "assigned", next: "not_followed", setTags: [], unreachable: false, reason: false, task: "FIRST_CONTACT", deadline: "+30分钟" },
@@ -72,14 +66,8 @@ window.BAIC_ADMIN_DATA = {
       { id: 11, current: "overdue", result: "unreachable", next: "overdue", setTags: [], unreachable: true, terminalAt: 3, terminalNext: "invalid_unreachable", terminalTags: [], reason: false, task: "CALLBACK", deadline: "+2小时" },
       { id: 12, current: "overdue", result: "invalid_number", next: "invalid_number", setTags: [], unreachable: false, reason: true, task: null, deadline: "—" },
       { id: 13, current: "followed_prospect", result: "interested", next: "followed_prospect", setTags: [], unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 14, current: "followed_prospect", result: "trial_yes", next: "followed_prospect", setTags: [], fieldUpdates: { trialStatus: "YES" }, unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 15, current: "followed_prospect", result: "trial_no", next: "followed_prospect", setTags: [], fieldUpdates: { trialStatus: "NO" }, unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 16, current: "followed_prospect", result: "visit_yes", next: "followed_prospect", setTags: [], fieldUpdates: { visitStatus: "YES" }, unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 17, current: "followed_prospect", result: "visit_no", next: "followed_prospect", setTags: [], fieldUpdates: { visitStatus: "NO" }, unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 18, current: "followed_prospect", result: "deal_yes", next: "followed_prospect", setTags: [], fieldUpdates: { dealStatus: "YES" }, unreachable: false, reason: false, task: null, deadline: "—" },
-      { id: 19, current: "followed_prospect", result: "deal_no", next: "followed_prospect", setTags: [], fieldUpdates: { dealStatus: "NO" }, unreachable: false, reason: false, task: "CALLBACK", deadline: "+1天" },
-      { id: 20, current: "followed_prospect", result: "clear_reject", next: "followed_lost_reject", setTags: [], unreachable: false, reason: true, task: null, deadline: "—" },
-      { id: 21, current: "followed_prospect", result: "bought_other", next: "followed_lost_other", setTags: [], unreachable: false, reason: true, task: null, deadline: "—" }
+      { id: 14, current: "followed_prospect", result: "clear_reject", next: "followed_lost_reject", setTags: [], unreachable: false, reason: true, task: null, deadline: "—" },
+      { id: 15, current: "followed_prospect", result: "bought_other", next: "followed_lost_other", setTags: [], unreachable: false, reason: true, task: null, deadline: "—" }
     ]
   }
 };

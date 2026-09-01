@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="北汽 CRM 管理员后台演示">
   <title>北汽管理员后台</title>
-  <link rel="stylesheet" href="admin.css?v=20260901-3">
+  <link rel="stylesheet" href="admin.css?v=20260901-4">
 </head>
 <body>
   <div class="admin-app">
@@ -80,7 +80,7 @@
             </div>
 
             <div class="config-pane" id="configResultsPane" hidden>
-              <div class="config-toolbar"><div><h2>销售跟进结果</h2><p>配置销售在工作台“本次跟进”中可以选择的结果；展示内容和顺序均以此处为准。</p></div><button class="primary-button" id="showResultForm" type="button">+ 添加跟进结果</button></div>
+              <div class="config-toolbar"><div><h2>销售跟进结果</h2><p>配置销售在工作台“本次跟进”中可以选择的结果；试驾、到店、成交属于独立推进字段，不在这里配置。</p></div><button class="primary-button" id="showResultForm" type="button">+ 添加跟进结果</button></div>
               <div class="result-source-note"><strong>取值规则</strong><span>工作台按照“当前线索节点 → 跟进策略 → 已启用销售结果”读取，不展示系统事件。</span></div>
               <div class="table-wrap transition-table"><table><thead><tr><th>顺序</th><th>结果名称</th><th>结果编码</th><th>结果分类</th><th>填写要求</th><th>已配置节点</th><th>状态</th><th>操作</th></tr></thead><tbody id="resultRows"></tbody></table></div>
             </div>
@@ -115,7 +115,7 @@
     </div>
   </div>
   <div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
-  <script src="admin-data.js?v=20260901-3"></script>
-  <script src="admin.js?v=20260901-3"></script>
+  <script src="admin-data.js?v=20260901-4"></script>
+  <script src="admin.js?v=20260901-4"></script>
 </body>
 </html>

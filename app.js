@@ -2,7 +2,7 @@ const data = window.CRM_DEMO_DATA;
 const leads = data.leads;
 const vehicleCatalog = data.vehicleCatalog || {};
 const dealerDirectory = data.dealers || [];
-const adminStorageKey = "baic_admin_demo_config_v7";
+const adminStorageKey = "baic_admin_demo_config_v8";
 const adminSourceData = window.BAIC_ADMIN_DATA || {};
 let adminConfigSnapshot = loadAdminConfigSnapshot();
 let transitionConfig = adminConfigSnapshot.transitionConfig || { states: [], leadTags: [], results: [], flows: [] };
@@ -22,6 +22,7 @@ const messages = {
     "field.name": "姓名", "field.phone": "手机号", "field.brand": "品牌", "field.series": "车系", "field.model": "车型", "field.region": "地区", "field.address": "地址",
     "dealer.finance": "经销商与金融信息", "dealer.name": "经销商", "dealer.placeholder": "输入或选择经销商", "dealer.hint": "可输入名称联想选择", "finance.price": "车价格", "finance.rate": "年利率", "finance.term": "贷款期数",
     "prospect.title": "客户推进信息", "prospect.description": "三个字段独立累计，用于筛选和统计", "prospect.trial": "是否试驾", "prospect.visit": "是否到店", "prospect.deal": "是否成交", "prospect.unmarked": "未标记", "prospect.yes": "是", "prospect.no": "否",
+    "progressUpdate.title": "本次同步更新", "progressUpdate.description": "试驾、到店、成交可同时更新；不选择则保持当前值", "progressUpdate.optional": "选填", "progressUpdate.current": "当前：{value}", "progressUpdate.keep": "不更新", "progressUpdate.yes": "是", "progressUpdate.no": "否", "progressUpdate.preview": "推进信息更新", "progressUpdate.unchanged": "保持当前进度",
     "follow.title": "本次跟进", "follow.description": "当前任务决定跟进内容，业务状态随跟进结果流转", "follow.scenario": "切换普通线索演示场景", "follow.currentState": "当前状态", "follow.result": "跟进结果", "follow.reason": "原因", "follow.reasonPlaceholder": "请输入具体原因", "follow.callbackNote": "用户约定说明", "follow.callbackPlaceholder": "例如：下班后方便接听", "follow.nextTime": "下一次联系时间", "follow.timeHint": "系统已按规则给出默认值，销售可以调整。", "follow.afterState": "提交后状态", "follow.nextTask": "下一任务", "follow.waiting": "等待选择跟进结果", "follow.noTask": "不再生成任务", "follow.attempts": "未接通 {count} 次",
     "records.operations": "操作记录", "records.notes": "跟踪记事", "records.description": "系统自动记录，按时间倒序展示。", "records.operator": "操作人：{operator}",
     "notes.addTitle": "销售手动添加跟踪记录", "notes.description": "记录沟通中的关键信息。", "notes.content": "跟踪内容", "notes.placeholder": "只记录用户输入或销售确认的关键信息", "notes.add": "添加记录", "notes.record": "跟踪记录",
@@ -38,7 +39,7 @@ const messages = {
     "result.invalid.label": "号码错误", "result.invalid.action": "转为战败终态", "result.invalid.deadline": "不再生成任务",
     "result.abandon.label": "放弃购买", "result.abandon.action": "转为战败终态", "result.abandon.deadline": "不再生成任务",
     "result.keepDormant.label": "继续暂存", "result.keepDormant.action": "保持当前暂存状态", "result.keepDormant.deadline": "默认 +30天",
-    "validation.result": "请选择跟进结果", "validation.reason": "请填写原因；战败或无意向原因不能为空", "validation.callbackNote": "请填写用户约定说明", "validation.callbackTime": "请选择用户约定的下一次联系时间", "validation.nextTime": "请选择下一次联系时间", "validation.dealer": "请从联想列表中选择有效经销商",
+    "validation.result": "请选择跟进结果", "validation.reason": "请填写原因；战败或无意向原因不能为空", "validation.callbackNote": "请填写用户约定说明", "validation.callbackTime": "请选择用户约定的下一次联系时间", "validation.nextTime": "请选择下一次联系时间", "validation.dealer": "请从联想列表中选择有效经销商", "validation.progressConflict": "成交选择“是”时，跟进结果不能同时选择明确拒绝或已购买其他品牌",
     "toast.submitted": "{id} 已提交，当前任务已完成，已进入下一条", "toast.watched": "已关注当前线索", "toast.unwatched": "已取消关注", "toast.noteRequired": "请输入跟踪内容", "toast.noteAdded": "跟踪记录已添加", "toast.noChanges": "当前信息没有变化", "toast.userUpdated": "用户当前信息已更新，原始线索信息未被覆盖", "toast.orderUpdated": "订单状态已更新为：{status}"
   },
   "es-MX": {
@@ -51,6 +52,7 @@ const messages = {
     "field.name": "Nombre", "field.phone": "Teléfono", "field.brand": "Marca", "field.series": "Línea", "field.model": "Versión", "field.region": "Región", "field.address": "Dirección",
     "dealer.finance": "Distribuidor e información financiera", "dealer.name": "Distribuidor", "dealer.placeholder": "Escribe o selecciona un distribuidor", "dealer.hint": "Escribe para buscar por nombre", "finance.price": "Precio del vehículo", "finance.rate": "Tasa anual", "finance.term": "Plazo del crédito",
     "prospect.title": "Avance del prospecto", "prospect.description": "Campos estandarizados para filtros y estadísticas", "prospect.trial": "Prueba de manejo", "prospect.visit": "Visita a distribuidor", "prospect.deal": "Venta cerrada", "prospect.unmarked": "Sin marcar", "prospect.yes": "Sí", "prospect.no": "No",
+    "progressUpdate.title": "Actualización de avance", "progressUpdate.description": "Puedes actualizar prueba, visita y cierre al mismo tiempo; sin selección se conserva el valor actual", "progressUpdate.optional": "Opcional", "progressUpdate.current": "Actual: {value}", "progressUpdate.keep": "Sin cambios", "progressUpdate.yes": "Sí", "progressUpdate.no": "No", "progressUpdate.preview": "Actualización del avance", "progressUpdate.unchanged": "Conservar avance actual",
     "follow.title": "Seguimiento actual", "follow.description": "La tarea define las acciones disponibles y el resultado actualiza el estado comercial", "follow.scenario": "Cambiar escenario de prospecto", "follow.currentState": "Estado actual", "follow.result": "Resultado del seguimiento", "follow.reason": "Motivo", "follow.reasonPlaceholder": "Ingresa el motivo específico", "follow.callbackNote": "Acuerdo con el cliente", "follow.callbackPlaceholder": "Ejemplo: llamar después del trabajo", "follow.nextTime": "Próximo contacto", "follow.timeHint": "El sistema propone una fecha según las reglas; el vendedor puede ajustarla.", "follow.afterState": "Estado después de enviar", "follow.nextTask": "Siguiente tarea", "follow.waiting": "Selecciona un resultado", "follow.noTask": "No se generará otra tarea", "follow.attempts": "Sin respuesta: {count} intento(s)",
     "records.operations": "Registro de operaciones", "records.notes": "Notas de seguimiento", "records.description": "Registro automático en orden cronológico inverso.", "records.operator": "Operador: {operator}",
     "notes.addTitle": "Agregar nota de seguimiento", "notes.description": "Registra la información clave de la conversación.", "notes.content": "Contenido de la nota", "notes.placeholder": "Registra únicamente información proporcionada o confirmada por el cliente", "notes.add": "Agregar nota", "notes.record": "Nota de seguimiento",
@@ -67,7 +69,7 @@ const messages = {
     "result.invalid.label": "Número incorrecto", "result.invalid.action": "Marcar como perdido", "result.invalid.deadline": "No se generará otra tarea",
     "result.abandon.label": "Desiste de la compra", "result.abandon.action": "Marcar como perdido", "result.abandon.deadline": "No se generará otra tarea",
     "result.keepDormant.label": "Mantener en pausa", "result.keepDormant.action": "Conservar el estado actual", "result.keepDormant.deadline": "Predeterminado +30 días",
-    "validation.result": "Selecciona un resultado de seguimiento", "validation.reason": "Ingresa un motivo; es obligatorio para prospectos perdidos o sin interés", "validation.callbackNote": "Describe el acuerdo con el cliente", "validation.callbackTime": "Selecciona la fecha acordada con el cliente", "validation.nextTime": "Selecciona la fecha del próximo contacto", "validation.dealer": "Selecciona un distribuidor válido de la lista",
+    "validation.result": "Selecciona un resultado de seguimiento", "validation.reason": "Ingresa un motivo; es obligatorio para prospectos perdidos o sin interés", "validation.callbackNote": "Describe el acuerdo con el cliente", "validation.callbackTime": "Selecciona la fecha acordada con el cliente", "validation.nextTime": "Selecciona la fecha del próximo contacto", "validation.dealer": "Selecciona un distribuidor válido de la lista", "validation.progressConflict": "Si la venta cerrada es “Sí”, el resultado no puede ser rechazo ni compra de otra marca",
     "toast.submitted": "{id} enviado. La tarea actual se completó y se abrió el siguiente prospecto", "toast.watched": "Prospecto agregado a seguimiento", "toast.unwatched": "Prospecto eliminado de seguimiento", "toast.noteRequired": "Ingresa el contenido de la nota", "toast.noteAdded": "Nota de seguimiento agregada", "toast.noChanges": "No hay cambios en la información actual", "toast.userUpdated": "La información actual se actualizó; los datos originales se conservaron", "toast.orderUpdated": "Estado del pedido actualizado a: {status}"
   }
 };
@@ -329,6 +331,7 @@ function renderLead() {
   $("watchButton").setAttribute("aria-pressed", String(Boolean(lead.watched)));
   renderScenarioOptions();
   renderResults();
+  renderProgressUpdateControls(lead);
   renderRecords();
   resetDynamicFields();
 }
@@ -447,6 +450,65 @@ function renderResults() {
   }
 }
 
+function progressValueLabel(value) {
+  return value === "YES" ? t("prospect.yes") : value === "NO" ? t("prospect.no") : t("prospect.unmarked");
+}
+
+function renderProgressUpdateControls(lead) {
+  if (!lead.prospectProgress) lead.prospectProgress = { trialStatus: null, visitStatus: null, dealStatus: null };
+  const grid = $("progressUpdateGrid");
+  grid.innerHTML = "";
+  (transitionConfig.progressFields || []).forEach((field) => {
+    const card = el("section", "progress-update-card");
+    const heading = el("div", "progress-update-card-heading");
+    const titleKey = { trialStatus: "prospect.trial", visitStatus: "prospect.visit", dealStatus: "prospect.deal" }[field.code];
+    heading.append(el("strong", "", titleKey ? t(titleKey) : field.name), el("small", "", t("progressUpdate.current", { value: progressValueLabel(lead.prospectProgress[field.code]) })));
+    const choices = el("div", "progress-choice-group");
+    [["KEEP", "progressUpdate.keep"], ["YES", "progressUpdate.yes"], ["NO", "progressUpdate.no"]].forEach(([value, labelKey]) => {
+      const label = el("label", "progress-choice");
+      const radio = el("input");
+      radio.type = "radio";
+      radio.name = `progress_${field.code}`;
+      radio.value = value;
+      radio.checked = value === "KEEP";
+      radio.addEventListener("change", updateActionPreview);
+      label.append(radio, el("span", "", t(labelKey)));
+      choices.appendChild(label);
+    });
+    card.append(heading, choices);
+    grid.appendChild(card);
+  });
+}
+
+function collectProgressUpdates() {
+  return (transitionConfig.progressFields || []).reduce((updates, field) => {
+    const selected = document.querySelector(`input[name="progress_${field.code}"]:checked`);
+    if (selected && selected.value !== "KEEP") updates[field.code] = selected.value;
+    return updates;
+  }, {});
+}
+
+function isCompletedDeal(progressUpdates = collectProgressUpdates()) {
+  return progressUpdates.dealStatus === "YES";
+}
+
+function updateActionPreview() {
+  const updates = collectProgressUpdates();
+  const entries = Object.entries(updates);
+  fillText("previewTags", entries.length ? entries.map(([field, value]) => `${progressFieldLabels[field] || field}=${value === "YES" ? t("prospect.yes") : t("prospect.no")}`).join("、") : t("progressUpdate.unchanged"));
+  if (!selectedResult) {
+    fillText("previewState", stateLabel(leadStateCode(activeLead())));
+    fillText("previewTask", t("follow.waiting"));
+    return;
+  }
+  const transition = getTransition(activeLead(), selectedResult);
+  if (!transition) return;
+  const noNextTask = transition.noNextTask || isCompletedDeal(updates);
+  $("nextTimeRow").hidden = noNextTask;
+  fillText("previewState", stateLabel(transition.stateCode));
+  fillText("previewTask", noNextTask ? t("follow.noTask") : transition.task + " · " + transition.deadline);
+}
+
 function resetDynamicFields() {
   $("reasonRow").hidden = true;
   $("callbackRow").hidden = true;
@@ -457,7 +519,8 @@ function resetDynamicFields() {
   $("nextTime").value = "";
   $("nextTimeDefault").value = "";
   fillText("previewState", stateLabel(leadStateCode(activeLead())));
-  fillText("previewTags", "保持当前进度");
+  document.querySelectorAll('#progressUpdateGrid input[value="KEEP"]').forEach((input) => { input.checked = true; });
+  fillText("previewTags", t("progressUpdate.unchanged"));
   fillText("previewTask", t("follow.waiting"));
   const hasResults = flowsForLead(activeLead()).length > 0;
   $("submitButton").disabled = !hasResults;
@@ -475,10 +538,7 @@ function selectResult(code, selectedLabel) {
   $("callbackRow").hidden = true;
   $("nextTimeRow").hidden = transition.noNextTask;
   $("nextTimeDefault").value = transition.time || "";
-  fillText("previewState", stateLabel(transition.stateCode));
-  const progressUpdates = Object.entries(transition.fieldUpdates || {});
-  fillText("previewTags", progressUpdates.length ? progressUpdates.map(([field, value]) => `${progressFieldLabels[field] || field}=${value === "YES" ? "是" : "否"}`).join("、") : "保持当前进度");
-  fillText("previewTask", transition.noNextTask ? t("follow.noTask") : transition.task + " · " + transition.deadline);
+  updateActionPreview();
 }
 
 function renderRecords() {
@@ -504,8 +564,10 @@ function renderRecords() {
 function validateSubmission(transition) {
   if (!selectedResult) return t("validation.result");
   if (!transition) return "当前结果没有匹配到后台流转规则，请管理员检查配置";
+  const progressUpdates = collectProgressUpdates();
+  if (isCompletedDeal(progressUpdates) && ["clear_reject", "bought_other"].includes(selectedResult)) return t("validation.progressConflict");
   if (!$("reasonRow").hidden && !$("reasonInput").value.trim()) return t("validation.reason");
-  if (!transition.noNextTask && !$("nextTimeDefault").value) return t("validation.nextTime");
+  if (!transition.noNextTask && !isCompletedDeal(progressUpdates) && !$("nextTimeDefault").value) return t("validation.nextTime");
   return "";
 }
 
@@ -524,6 +586,8 @@ function submitFollowUp() {
   const resultLabel = resultLabelFor(selectedResult);
   const reason = $("reasonInput").value.trim();
   const nextTime = $("nextTimeDefault").value;
+  const progressUpdateMap = collectProgressUpdates();
+  const noNextTask = transition.noNextTask || isCompletedDeal(progressUpdateMap);
   const oldState = stateLabel(leadStateCode(lead));
   const newState = stateLabel(transition.stateCode);
   const newOperations = [
@@ -531,19 +595,19 @@ function submitFollowUp() {
     ["刚刚", "任务完成", lead.task.group + "任务 " + lead.task.id + " 已由处理中更新为已完成"]
   ];
   if (oldState !== newState) newOperations.push(["刚刚", "状态流转", oldState + " → " + newState]);
-  const progressUpdates = Object.entries(transition.fieldUpdates || {});
+  const progressUpdates = Object.entries(progressUpdateMap);
   if (progressUpdates.length) {
     if (!lead.prospectProgress) lead.prospectProgress = { trialStatus: null, visitStatus: null, dealStatus: null };
     progressUpdates.forEach(([field, value]) => { lead.prospectProgress[field] = value; });
     newOperations.push(["刚刚", "潜客推进信息更新", progressUpdates.map(([field, value]) => `${progressFieldLabels[field] || field}：${value === "YES" ? "是" : "否"}`).join("；")]);
   }
-  if (!transition.noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
-  else newOperations.push(["刚刚", "任务结束", "后台流转规则未配置后续任务"]);
+  if (!noNextTask) newOperations.push(["刚刚", "任务生成", "生成" + transition.task + "；触发原因：" + transition.trigger + "；截止时间：" + readableTime(nextTime)]);
+  else newOperations.push(["刚刚", "任务结束", isCompletedDeal(progressUpdateMap) ? "客户已标记成交，不再生成后续联系任务" : "后台流转规则未配置后续任务"]);
   lead.operations = newOperations.concat(lead.operations);
   lead.stateCode = transition.stateCode;
   lead.leadTags = [];
   lead.unreachableCount = transition.nextCount;
-  if (transition.noNextTask) {
+  if (noNextTask) {
     lead.lostReason = reason || lead.lostReason;
     lead.task = null;
   } else {
