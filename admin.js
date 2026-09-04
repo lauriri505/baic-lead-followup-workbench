@@ -20,7 +20,7 @@ const $ = (id) => document.getElementById(id);
 const qsa = (selector) => Array.from(document.querySelectorAll(selector));
 const esc = (value = "") => String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
 const roleLabels = { tenant_admin: "北汽管理员", sales: "北汽销售" };
-const permissionOptions = ["查看北汽全部线索", "查看本人负责线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"];
+const permissionOptions = ["查看北汽全部线索", "查看本人负责线索", "配置账号与角色", "配置任务规则", "配置线索流转", "查看操作记录", "允许接收导入线索", "处理销售任务", "提交跟进结果", "编辑用户当前信息", "添加跟踪记事"];
 const viewNames = { dashboard: "后台总览", leads: "线索数据", accounts: "账号与角色", tasks: "任务配置", nodes: "线索流转配置" };
 const groupLabels = { entry: "系统入口", not_followed: "未跟进", followed: "已跟进", invalid: "无效线索", overdue: "过期未跟进", won: "成交" };
 const mainStatusGroups = Object.fromEntries(Object.entries(groupLabels).map(([group, label]) => [label, group]));
@@ -78,6 +78,30 @@ function renderLeads() {
   $("leadTotal").textContent = filtered.length;
   $("leadRows").innerHTML = filtered.map(leadRow).join("");
   $("leadEmpty").hidden = filtered.length > 0;
+}
+function importEligibleAccounts() {
+  return state.accounts.filter((account) => account.status === "启用" && (state.permissions[account.role] || []).includes("允许接收导入线索"));
+}
+function syncImportFields() {
+  const manual = $("importEntryType").value === "人工";
+  $("importChannel").disabled = manual;
+  $("importSource").disabled = manual;
+  if (manual) { $("importChannel").value = ""; $("importSource").value = ""; }
+}
+function openImportModal() {
+  const accounts = importEligibleAccounts();
+  if (!accounts.length) return toast("没有可分配的账号，请先在账号与角色中勾选“允许接收导入线索”");
+  $("importAssignee").innerHTML = accounts.map((account) => `<option value="${esc(account.id)}">${esc(account.id)} · ${esc(account.username)}</option>`).join("");
+  if (!$('importCreatedAt').value) $('importCreatedAt').value = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString().slice(0, 16);
+  $("importModal").hidden = false; $("importName").focus();
+}
+function submitImport(event) {
+  event.preventDefault();
+  const assignee = importEligibleAccounts().find((account) => account.id === $("importAssignee").value);
+  if (!assignee) return toast("当前没有具备导入线索权限的可用账号");
+  const manual = $("importEntryType").value === "人工";
+  const lead = { id: `BAIC-LD-${Date.now()}`, name: $("importName").value.trim(), phone: $("importPhone").value.trim(), city: $("importCity").value.trim(), region: $("importCity").value.trim(), brand: "BAIC", series: $("importSeries").value.trim(), model: $("importModel").value.trim(), type: $("importType").value, entryType: $("importEntryType").value, channel: manual ? "" : $("importChannel").value, source: manual ? "" : $("importSource").value, createdAt: $("importCreatedAt").value.replace("T", " "), status: "未跟进", subStatus: "正常等待跟进", quality: "UNKNOWN", assignee: assignee.id + " " + assignee.username, task: "首次联系", taskStatus: "待处理" };
+  state.leads.unshift(lead); persist(); renderLeads(); renderDashboard(); $("importModal").hidden = true; event.target.reset(); $("importBrand") && ($("importBrand").value = "BAIC"); syncImportFields(); toast("线索已导入并分配给 " + assignee.id + " " + assignee.username);
 }
 function renderAccounts() {
   $("accountRows").innerHTML = state.accounts.map((account, index) => `<tr><td><strong>${esc(account.id)}</strong></td><td>${esc(account.username)}</td><td><select class="account-role" data-index="${index}"><option value="tenant_admin" ${account.role === "tenant_admin" ? "selected" : ""}>北汽管理员</option><option value="sales" ${account.role === "sales" ? "selected" : ""}>北汽销售</option></select></td><td>${account.role === "tenant_admin" ? "北汽全部线索" : "本人负责线索"}</td><td><select class="account-status" data-index="${index}"><option ${account.status === "启用" ? "selected" : ""}>启用</option><option ${account.status === "停用" ? "selected" : ""}>停用</option></select></td><td>${esc(account.lastLogin)}</td></tr>`).join("");
@@ -384,4 +408,8 @@ $("saveTransitions").addEventListener("click", () => { const errors = validateTr
 $("copyTransitionConfig").addEventListener("click", async () => { try { await navigator.clipboard.writeText(JSON.stringify(state.transitionConfig, null, 2)); toast("配置已复制"); } catch (error) { toast("浏览器未允许复制，请手动选择配置内容"); } });
 $("exportTransitionConfig").addEventListener("click", () => { const blob = new Blob([JSON.stringify(state.transitionConfig, null, 2)], { type: "application/json" }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `baic-lead-transition-${state.transitionConfig.brand.version}.json`; link.click(); URL.revokeObjectURL(link.href); });
 
-buildLeadFilters(); renderDashboard(); renderAccounts(); renderTaskRules(); renderTransitions();
+$("openImportButton").addEventListener("click", openImportModal);
+$("importEntryType").addEventListener("change", syncImportFields);
+$("importForm").addEventListener("submit", submitImport);
+[$("closeImport"), $("cancelImport")].forEach((button) => button.addEventListener("click", () => { $("importModal").hidden = true; }));
+buildLeadFilters(); renderDashboard(); renderAccounts(); renderTaskRules(); renderTransitions(); syncImportFields();
